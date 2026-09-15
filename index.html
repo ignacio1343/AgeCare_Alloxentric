@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgeCare · Suscripciones y Pagos</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#ffffff; --ink:#1f2733; --ink-soft:#5b6573; --ink-faint:#8b95a3;
+    --line:#e4e8ee; --line-strong:#cfd6df; --brand:#3b6fd4; --brand-ink:#2b55a8;
+    --brand-soft:#e7eefb; --sidebar:#141b26; --sidebar-ink:#aeb8c6; --sidebar-active:#1f2b3d;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --neutral-mark:#c9d2de;
+    --ok:#0ca30c; --ok-bg:#e9f6e9; --warn:#b97800; --warn-bg:#fdf3dc;
+    --serious:#c05a2e; --serious-bg:#fdeee6; --crit:#d03b3b; --crit-bg:#fbe7e7;
+    --radius:14px; --shadow:0 1px 2px rgba(31,39,51,.05), 0 8px 24px rgba(31,39,51,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;display:flex;min-height:100vh;}
+  .sidebar{width:236px;flex-shrink:0;background:var(--sidebar);color:var(--sidebar-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+  .logo{display:flex;align-items:center;gap:10px;padding:18px 18px 14px}
+  .logo-mark{width:34px;height:34px;border-radius:10px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+  .logo-name{color:#fff;font-weight:700;font-size:15px;line-height:1.1}
+  .logo-sub{font-size:10.5px;color:var(--sidebar-ink);margin-top:2px}
+  .nav{flex:1;overflow-y:auto;padding:6px 10px 10px}
+  .nav-group{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7686;padding:16px 10px 6px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:13.5px;color:var(--sidebar-ink);margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+  .nav-item:hover{background:rgba(255,255,255,.05);color:#e8edf4}
+  .nav-item.active{background:var(--sidebar-active);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--brand)}
+  .nav-item .ico{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+  .nav-item .soon{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;color:#7d8898;border:1px solid #313c4d;border-radius:6px;padding:2px 6px}
+  .sidebar-foot{border-top:1px solid #232d3c;padding:12px 16px;display:flex;align-items:center;gap:10px}
+  .sf-avatar{width:32px;height:32px;border-radius:50%;background:#31507f;color:#cfe0fb;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px}
+  .sf-name{color:#e8edf4;font-size:12.5px;font-weight:600;line-height:1.15}
+  .sf-role{font-size:10.5px;color:#7d8898}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:14px 28px;display:flex;align-items:center;gap:14px;}
+  .tb-title{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .tb-crumb{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+  .tb-spacer{flex:1}
+  .env-badge{font-size:11px;font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border:1px solid #cddcf7;border-radius:8px;padding:5px 10px}
+  .content{padding:22px 28px 60px;max-width:1240px;width:100%;margin:0 auto}
+  .view{display:none} .view.active{display:block}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  .card-title{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .card-sub{font-size:11.5px;color:var(--ink-faint);margin-top:3px}
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .grid{display:grid;gap:16px} .g2{grid-template-columns:1fr 1fr}
+  @media(max-width:1100px){.g2{grid-template-columns:1fr}}
+  .filter-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .filter-label{font-size:12px;color:var(--ink-soft);font-weight:600}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;padding:3px;flex-wrap:wrap}
+  .seg button{border:none;background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);padding:6px 11px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .seg button.on{background:var(--brand);color:#fff}
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+  .kpi-label{font-size:11.5px;color:var(--ink-soft);font-weight:600}
+  .kpi-value{font-size:26px;font-weight:650;letter-spacing:-.02em;margin-top:6px;line-height:1}
+  .kpi-delta{font-size:11.5px;margin-top:7px;font-weight:600;color:var(--ink-faint)}
+  .kpi-delta.up{color:#006300} .kpi-delta.down{color:var(--crit)}
+  .kpi-note{font-size:10.5px;color:var(--ink-faint);margin-top:4px}
+  table.data{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.data th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:700;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  table.data td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.data tr:last-child td{border-bottom:none}
+  table.data td.num,table.data th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+  .linekey{display:inline-block;width:14px;height:0;border-top:3px solid;border-radius:2px;margin-right:7px;vertical-align:3px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);align-items:center}
+  .legend .item{display:inline-flex;align-items:center;gap:6px}
+  .chart-wrap{position:relative} .chart-wrap svg{display:block;width:100%;height:auto}
+  #chart-funnel svg{max-width:760px}
+  .axis-t{font-size:10.5px;fill:var(--ink-faint)} .grid-l{stroke:#e9ecf1;stroke-width:1}
+  .baseline{stroke:#c8cfd9;stroke-width:1} .dlabel{font-size:10.5px;font-weight:700;fill:var(--ink-soft)}
+  #tt{position:fixed;z-index:99;pointer-events:none;background:#1f2733;color:#fff;border-radius:9px;padding:9px 12px;font-size:11.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .08s;max-width:260px}
+  #tt .tt-h{font-size:10.5px;color:#aeb8c6;margin-bottom:5px;font-weight:600}
+  #tt .tt-row{display:flex;align-items:center;gap:7px;margin-top:3px}
+  #tt .tt-v{font-weight:700;margin-left:auto;padding-left:14px;font-variant-numeric:tabular-nums}
+  .banner{display:flex;align-items:center;gap:14px;border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;border:1px solid}
+  .banner.ok{background:var(--ok-bg);border-color:#cfe9cf}
+  .banner .b-ico{font-size:22px}
+  .banner .b-t{font-weight:700;font-size:14.5px}
+  .banner .b-s{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:8px;padding:4px 9px}
+  .chip.ok{color:#0a7a0a;background:var(--ok-bg)}
+  .chip.warn{color:var(--warn);background:var(--warn-bg)}
+  .chip.crit{color:var(--crit);background:var(--crit-bg)}
+  .chip.neutral{color:var(--ink-soft);background:#eef1f6}
+  .action-btn{font-size:12px; font-weight:700; color:var(--brand); text-decoration:none; cursor:pointer; padding:4px 8px; border-radius:6px;}
+  .action-btn:hover{background:var(--brand-soft);}
+  .primary-btn{padding:8px 16px; background:var(--brand); color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;}
+  .primary-btn:hover{background:var(--brand-ink);}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">A</div>
+    <div>
+      <div class="logo-name">AgeCare</div>
+      <div class="logo-sub">Consola Financiera</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-group">Negocio y Ventas</div>
+    <button class="nav-item active" data-view="comercial"><span class="ico">📈</span>Suscripciones y MRR</button>
+    <button class="nav-item" data-view="pagos"><span class="ico">💳</span>Pasarela de Pagos</button>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="sf-avatar">AF</div>
+    <div>
+      <div class="sf-name">Álvaro Faundez</div>
+      <div class="sf-role">Equipo de Desarrollo</div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div>
+      <div class="tb-title" id="tb-title">Suscripciones y MRR</div>
+      <div class="tb-crumb" id="tb-crumb">Negocio y Ventas · Métricas de conversión y planes</div>
+    </div>
+    <div class="tb-spacer"></div>
+    <span class="env-badge">Avance Sprint 1</span>
+  </header>
+  <main class="content">
+
+<!-- VISTA 1: USO COMERCIAL -->
+<section class="view active" id="view-comercial">
+  <div class="filter-row">
+    <span class="filter-label">Periodo</span>
+    <div class="seg" id="period-seg" role="tablist" aria-label="Selector de periodo"></div>
+  </div>
+  <div class="kpis" id="kpi-row"></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Altas y bajas de usuarios</div>
+          <div class="card-sub" id="chart-alt-sub">Nuevos usuarios registrados frente a cuentas dadas de baja</div>
+        </div>
+        <div class="legend">
+          <span class="item"><span class="linekey" style="border-color:var(--s1)"></span>Altas</span>
+          <span class="item"><span class="linekey" style="border-color:var(--s2)"></span>Bajas</span>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart-altas"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Mezcla de planes</div>
+          <div class="card-sub">Usuarios activos por plan · hoy</div>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart-planes"></div>
+      <table class="data" id="tabla-planes" style="margin-top:14px">
+        <thead>
+          <tr><th>Plan</th><th class="num">Usuarios</th><th class="num">Cuota</th><th class="num">Precio</th><th class="num">MRR (CLP)</th><th class="num">Churn mensual</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="swatch" style="background:var(--neutral-mark)"></span>Gratuito</td><td class="num">8.900</td><td class="num">90,4%</td><td class="num">—</td><td class="num">—</td><td class="num">2,9%</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s4)"></span>Dorado <span style="color:var(--ink-faint)">(por usuario)</span></td><td class="num">610</td><td class="num">6,2%</td><td class="num">$1.000</td><td class="num">610.000</td><td class="num">4,1%</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s1)"></span>Platino <span style="color:var(--ink-faint)">(por familia)</span></td><td class="num">240</td><td class="num">2,4%</td><td class="num">$10.000</td><td class="num">2.400.000</td><td class="num">2,2%</td></tr>
+          <tr><td><span class="swatch" style="background:var(--s3)"></span>Proveedor</td><td class="num">90</td><td class="num">0,9%</td><td class="num">$5.000</td><td class="num">450.000</td><td class="num">1,8%</td></tr>
+          <tr style="font-weight:700"><td>Total</td><td class="num">9.840</td><td class="num">100%</td><td class="num"></td><td class="num">3.460.000</td><td class="num">3,2%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Embudo de adquisición</div>
+        <div class="card-sub" id="funnel-sub">Conversión desde el registro hasta el plan de pago</div>
+      </div>
+    </div>
+    <div class="chart-wrap" id="chart-funnel"></div>
+  </div>
+</section>
+
+<!-- VISTA 2: PASARELA DE PAGOS -->
+<section class="view" id="view-pagos">
+  <div class="banner ok">
+    <span class="b-ico">🔌</span>
+    <div>
+      <div class="b-t">Conexión con Pasarela Externa Activa (Modo Sandbox)</div>
+      <div class="b-s">Proveedor TBD (Stripe / Webpay) · Última sincronización: hace 2 minutos</div>
+    </div>
+  </div>
+
+  <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi"><div class="kpi-label">Transacciones Aprobadas (Hoy)</div><div class="kpi-value">14</div><div class="kpi-delta up">+$140.000 CLP</div></div>
+    <div class="kpi"><div class="kpi-label">Cobros Fallidos / Rechazados</div><div class="kpi-value">3</div><div class="kpi-delta down">Requieren seguimiento</div><div class="kpi-note">Cuentas en periodo de gracia</div></div>
+    <div class="kpi"><div class="kpi-label">Tasa de Éxito de Pago</div><div class="kpi-value">94.5%</div><div class="kpi-delta up">+1.2% vs semana anterior</div><div class="kpi-note">Últimos 7 días</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Últimos Movimientos y Auditoría Transaccional</div>
+        <div class="card-sub">Registro de cobros recurrentes y upgrades en tiempo real</div>
+      </div>
+      <button class="primary-btn">📥 Exportar CSV a Finanzas</button>
+    </div>
+    <table class="data">
+      <thead>
+        <tr><th>ID Transacción</th><th>Usuario / Agencia</th><th>Plan</th><th class="num">Monto (CLP)</th><th>Estado</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9982</span></td>
+          <td style="font-weight:600">Familia Pérez Muñoz</td>
+          <td><span class="chip neutral">Platino</span></td>
+          <td class="num">$10.000</td>
+          <td><span class="chip ok">✔ Aprobado</span></td>
+          <td><a class="action-btn">Ver Recibo</a></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9981</span></td>
+          <td style="font-weight:600">Agencia Cuidados Vitales SPA</td>
+          <td><span class="chip neutral">Proveedor</span></td>
+          <td class="num">$5.000</td>
+          <td><span class="chip ok">✔ Aprobado</span></td>
+          <td><a class="action-btn">Ver Recibo</a></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9980</span></td>
+          <td style="font-weight:600">Juan Gómez</td>
+          <td><span class="chip neutral">Dorado</span></td>
+          <td class="num">$1.000</td>
+          <td><span class="chip crit">✖ Fondos Insuf.</span></td>
+          <td><a class="action-btn" style="color:var(--crit)">Reintentar Cobro</a></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9979</span></td>
+          <td style="font-weight:600">Familia Rojas Silva</td>
+          <td><span class="chip neutral">Platino</span></td>
+          <td class="num">$10.000</td>
+          <td><span class="chip warn">▲ Reembolsado</span></td>
+          <td><a class="action-btn" style="color:var(--ink-faint)">Detalles</a></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9978</span></td>
+          <td style="font-weight:600">María Inés López (Upgrade)</td>
+          <td><span class="chip neutral">Dorado</span></td>
+          <td class="num">$1.000</td>
+          <td><span class="chip ok">✔ Aprobado</span></td>
+          <td><a class="action-btn">Ver Recibo</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+  </main>
+</div>
+<div id="tt" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const SVGNS = 'http://www.w3.org/2000/svg';
+const fmt = n => n.toLocaleString('es-CL');
+const C = {s1:'#2a78d6', s2:'#eb6834', s3:'#1baf7a', s4:'#eda100', neutral:'#c9d2de', inkSoft:'#5b6573', inkFaint:'#8b95a3'};
+
+const tt = $('#tt');
+function ttShow(x, y, header, rows){
+  tt.textContent = '';
+  if(header){ const h = document.createElement('div'); h.className='tt-h'; h.textContent = header; tt.appendChild(h); }
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className='tt-row';
+    if(r.color){ const k=document.createElement('span'); k.style.cssText=`width:12px;height:0;border-top:3px solid ${r.color};border-radius:2px;display:inline-block`; row.appendChild(k); }
+    const lab = document.createElement('span'); lab.textContent = r.label; lab.style.color='#c9d2de'; row.appendChild(lab);
+    const val = document.createElement('span'); val.className='tt-v'; val.textContent = r.value; row.appendChild(val);
+    tt.appendChild(row);
+  });
+  tt.style.opacity = 1;
+  const w = tt.offsetWidth, h = tt.offsetHeight;
+  let px = x + 14, py = y - h - 10;
+  if(px + w > innerWidth - 8) px = x - w - 14;
+  if(py < 8) py = y + 16;
+  tt.style.left = px + 'px'; tt.style.top = py + 'px';
+}
+function ttHide(){ tt.style.opacity = 0; }
+
+const VIEW_META = {
+  comercial:  ['Suscripciones y MRR', 'Negocio y Ventas · Métricas de conversión y planes'],
+  pagos:      ['Pasarela de Pagos', 'Negocio y Ventas · Transacciones y Gestión de Cobros'],
+};
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(s => s.classList.remove('active'));
+    $('#view-' + v).classList.add('active');
+    $('#tb-title').textContent = VIEW_META[v][0];
+    $('#tb-crumb').textContent = VIEW_META[v][1];
+    window.scrollTo({top:0});
+  });
+});
+
+function lineChart(el, labels, series, opts={}){
+  el.textContent = '';
+  const W = 560, H = 240, mR = opts.endNames ? 118 : 46, m = {l:46, r:mR, t:14, b:30};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const all = series.flatMap(s => s.values), rawMax = Math.max(...all);
+  const unit = Math.pow(10, Math.floor(Math.log10(rawMax)));
+  let yMax = Math.ceil(rawMax / unit) * unit; if(yMax === rawMax) yMax += unit;
+  const X = i => m.l + (labels.length === 1 ? iw/2 : i * iw / (labels.length - 1));
+  const Y = v => m.t + ih - (v / yMax) * ih;
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const mk = (tag, at, parent=svg) => { const n = document.createElementNS(SVGNS, tag); for(const k in at) n.setAttribute(k, at[k]); parent.appendChild(n); return n; };
+  for(let g = 0; g <= 4; g++){
+    const v = yMax * g / 4, y = Y(v);
+    mk('line', {x1:m.l, x2:W - m.r + (opts.endNames?10:0), y1:y, y2:y, class: g===0 ? 'baseline' : 'grid-l'});
+    const t = mk('text', {x:m.l - 8, y:y + 3.5, 'text-anchor':'end', class:'axis-t'});
+    t.textContent = v >= 1000 ? (v/1000).toLocaleString('es-CL', {maximumFractionDigits:1}) + 'K' : fmt(Math.round(v));
+  }
+  const every = Math.ceil(labels.length / 8);
+  labels.forEach((lab, i) => { if(i % every) return; const t = mk('text', {x:X(i), y:H - 8, 'text-anchor':'middle', class:'axis-t'}); t.textContent = lab; });
+  series.forEach(s => {
+    const d = s.values.map((v,i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    mk('path', {d, fill:'none', stroke:s.color, 'stroke-width':2, 'stroke-linejoin':'round', 'stroke-linecap':'round'});
+    const li = s.values.length - 1;
+    mk('circle', {cx:X(li), cy:Y(s.values[li]), r:4.5, fill:s.color, stroke:'#ffffff', 'stroke-width':2});
+  });
+  const cross = mk('line', {x1:0, x2:0, y1:m.t, y2:m.t + ih, stroke:'#8b95a3', 'stroke-width':1, opacity:0});
+  const hit = mk('rect', {x:m.l, y:m.t, width:iw, height:ih, fill:'transparent'});
+  hit.addEventListener('pointermove', e => {
+    const r = svg.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W;
+    let idx = Math.round((fx - m.l) / (iw / (labels.length - 1))); idx = Math.max(0, Math.min(labels.length - 1, idx));
+    cross.setAttribute('x1', X(idx)); cross.setAttribute('x2', X(idx)); cross.setAttribute('opacity', .6);
+    ttShow(e.clientX, e.clientY, labels[idx], series.map(s => ({color:s.color, label:s.name, value:fmt(s.values[idx])})));
+  });
+  hit.addEventListener('pointerleave', () => { cross.setAttribute('opacity', 0); ttHide(); });
+  el.appendChild(svg);
+}
+
+function hBars(el, items, opts={}){
+  el.textContent = '';
+  const W = 560, rowH = 32, m = {l:opts.labelW || 170, r:70, t:4, b:22};
+  const H = m.t + items.length * rowH + m.b, iw = W - m.l - m.r, max = opts.max || Math.max(...items.map(i => i.value));
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const mk = (tag, at) => { const n = document.createElementNS(SVGNS, tag); for(const k in at) n.setAttribute(k, at[k]); svg.appendChild(n); return n; };
+  mk('line', {x1:m.l, x2:m.l, y1:m.t, y2:H - m.b, class:'baseline'});
+  items.forEach((it, i) => {
+    const y = m.t + i * rowH + (rowH - 18) / 2, w = Math.max(2, it.value / max * iw);
+    const lab = mk('text', {x:m.l - 10, y:y + 13, 'text-anchor':'end', class:'axis-t', 'font-size':11}); lab.textContent = it.label;
+    const bar = mk('path', {d:`M${m.l} ${y} h${(w-4).toFixed(1)} a4 4 0 0 1 4 4 v10 a4 4 0 0 1 -4 4 h-${(w-4).toFixed(1)} Z`, fill: it.color || C.s1});
+    const val = mk('text', {x:m.l + w + 8, y:y + 13, class:'dlabel'}); val.textContent = it.display !== undefined ? it.display : fmt(it.value);
+    const hit = mk('rect', {x:0, y:m.t + i * rowH, width:W, height:rowH, fill:'transparent'});
+    hit.addEventListener('pointermove', e => ttShow(e.clientX, e.clientY, it.label, [{color:it.color || C.s1, label:opts.metric || 'Valor', value:it.display !== undefined ? it.display : fmt(it.value)}].concat(it.extra || [])));
+    hit.addEventListener('pointerleave', ttHide);
+  });
+  el.appendChild(svg);
+}
+
+function stackBar(el, segments, opts={}){
+  el.textContent = '';
+  const W = 560, barH = 34, H = barH + (opts.legend === false ? 8 : 46), total = segments.reduce((a,s) => a + s.value, 0);
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  let x = 0;
+  segments.forEach((s, i) => {
+    const w = s.value / total * W - (i < segments.length - 1 ? 2 : 0), r = document.createElementNS(SVGNS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', 0); r.setAttribute('width', Math.max(1, w)); r.setAttribute('height', barH); r.setAttribute('fill', s.color);
+    if(i === 0 || i === segments.length - 1) r.setAttribute('rx', 6);
+    svg.appendChild(r);
+    const pct = (s.value / total * 100);
+    r.addEventListener('pointermove', e => ttShow(e.clientX, e.clientY, s.label, [{color:s.color, label:opts.metric || 'Usuarios', value:fmt(s.value)}, {label:'Cuota', value:pct.toLocaleString('es-CL',{maximumFractionDigits:1}) + '%'}]));
+    r.addEventListener('pointerleave', ttHide);
+    x += w + 2;
+  });
+  el.appendChild(svg);
+  if(opts.legend !== false){
+    const lg = document.createElement('div'); lg.className = 'legend'; lg.style.marginTop = '10px';
+    segments.forEach(s => {
+      const it = document.createElement('span'), sw = document.createElement('span');
+      it.className = 'item'; sw.className = 'swatch'; sw.style.background = s.color; sw.style.marginRight = '0';
+      it.appendChild(sw); it.appendChild(document.createTextNode(s.label)); lg.appendChild(it);
+    });
+    el.appendChild(lg);
+  }
+}
+
+const PERIODS = [
+  {k:'hoy',  n:'Hoy',              labels:['00 h','03 h','06 h','09 h','12 h','15 h','18 h','21 h'], altas:[2,1,3,9,14,11,13,9], bajas:[0,0,1,2,2,1,2,1], desc:118, prevAltas:57},
+  {k:'sem',  n:'Semana en curso',  labels:['Lun','Mar','Mié','Jue','Vie'], altas:[72,81,64,88,79], bajas:[11,9,12,8,11], desc:735, prevAltas:361},
+  {k:'7d',   n:'Últimos 7 días',   labels:['Vie','Sáb','Dom','Lun','Mar','Mié','Jue'], altas:[68,54,49,72,81,64,88], bajas:[10,7,6,11,9,12,8], desc:915, prevAltas:452},
+  {k:'mes',  n:'Mes en curso',     labels:['1–7 ago','8–14 ago','15–21 ago','22–28 ago'], altas:[430,512,488,550], bajas:[64,71,69,82], desc:3780, prevAltas:1804},
+  {k:'30d',  n:'Últimos 30 días',  labels:['−30 d','−25 d','−20 d','−15 d','−10 d','−5 d'], altas:[345,362,338,371,390,404], bajas:[48,52,50,55,51,54], desc:4210, prevAltas:1988},
+  {k:'ytd',  n:'Año en curso',     labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago'], altas:[640,720,890,1080,1260,1310,1540,1980], bajas:[70,88,104,128,142,151,161,286], desc:17870, prevAltas:2130},
+  {k:'12m',  n:'Últimos 12 meses', labels:['Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago'], altas:[310,360,420,520,640,720,890,1080,1260,1310,1540,1980], bajas:[36,41,48,60,70,88,104,128,142,151,161,286], desc:18420, prevAltas:1620},
+];
+const ACTIVOS = 9840, PAGO = 940, MRR = 3460000;
+
+const seg = $('#period-seg');
+PERIODS.forEach((p, i) => {
+  const b = document.createElement('button'); b.textContent = p.n; b.setAttribute('role','tab');
+  if(i === 3) b.classList.add('on');
+  b.addEventListener('click', () => { seg.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); renderComercial(p); });
+  seg.appendChild(b);
+});
+
+function kpi(label, value, deltaTxt, deltaCls, note){
+  return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>` +
+    (deltaTxt ? `<div class="kpi-delta ${deltaCls||''}">${deltaTxt}</div>` : '') +
+    (note ? `<div class="kpi-note">${note}</div>` : '') + `</div>`;
+}
+
+function renderComercial(p){
+  const altas = p.altas.reduce((a,b) => a+b, 0), bajas = p.bajas.reduce((a,b) => a+b, 0);
+  const churn = (bajas / ACTIVOS * 100).toLocaleString('es-CL', {maximumFractionDigits:1});
+  const dAltas = Math.round((altas - p.prevAltas) / p.prevAltas * 100);
+  $('#kpi-row').innerHTML = kpi('Nuevos usuarios', fmt(altas), (dAltas >= 0 ? '+' : '') + dAltas + '% vs anterior', dAltas >= 0 ? 'up' : 'down') +
+    kpi('Bajas', fmt(bajas), 'churn ' + churn + '%', bajas / ACTIVOS > .03 ? 'down' : '') +
+    kpi('Usuarios activos', fmt(ACTIVOS), '+3,1% vs mes anterior', 'up', 'MAU') +
+    kpi('En plan de pago', fmt(PAGO), '9,6% de los activos', '', 'Dorado + Platino + Proveedor') +
+    kpi('MRR', '$' + (MRR/1e6).toLocaleString('es-CL', {maximumFractionDigits:2}) + ' M', '+5,2% vs mes anterior', 'up', 'CLP · suscripciones');
+  $('#chart-alt-sub').textContent = 'Nuevos usuarios registrados frente a cuentas dadas de baja · ' + p.n.toLowerCase();
+  lineChart($('#chart-altas'), p.labels, [{name:'Altas', color:C.s1, values:p.altas}, {name:'Bajas', color:C.s2, values:p.bajas}]);
+}
+renderComercial(PERIODS[3]);
+
+stackBar($('#chart-planes'), [
+  {label:'Gratuito',  value:8900, color:C.neutral}, {label:'Dorado',    value:610,  color:C.s4},
+  {label:'Platino',   value:240,  color:C.s1, lightText:true}, {label:'Proveedor', value:90,   color:C.s3}
+], {metric:'Usuarios'});
+
+hBars($('#chart-funnel'), [
+  {label:'Cuentas creadas',      value:12610, color:'#3987e5', display:'12.610'},
+  {label:'Activos últimos 30 d', value:9840,  color:'#1c5cab', display:'9.840 · 78%',  extra:[{label:'Sobre cuentas', value:'78%'}]},
+  {label:'En plan de pago',      value:940,   color:'#0d366b', display:'940 · 7,4%',   extra:[{label:'Sobre cuentas', value:'7,4%'}]},
+], {metric:'Usuarios', labelW:150});
+</script>
+</body>
+</html>
