@@ -1,347 +1,739 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgeCare · Suscripciones y Pagos</title>
-<style>
-  :root{
-    --bg:#f4f6f9; --surface:#ffffff; --ink:#1f2733; --ink-soft:#5b6573; --ink-faint:#8b95a3;
-    --line:#e4e8ee; --line-strong:#cfd6df; --brand:#3b6fd4; --brand-ink:#2b55a8;
-    --brand-soft:#e7eefb; --sidebar:#141b26; --sidebar-ink:#aeb8c6; --sidebar-active:#1f2b3d;
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --neutral-mark:#c9d2de;
-    --ok:#0ca30c; --ok-bg:#e9f6e9; --warn:#b97800; --warn-bg:#fdf3dc;
-    --serious:#c05a2e; --serious-bg:#fdeee6; --crit:#d03b3b; --crit-bg:#fbe7e7;
-    --radius:14px; --shadow:0 1px 2px rgba(31,39,51,.05), 0 8px 24px rgba(31,39,51,.06);
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;display:flex;min-height:100vh;}
-  .sidebar{width:236px;flex-shrink:0;background:var(--sidebar);color:var(--sidebar-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
-  .logo{display:flex;align-items:center;gap:10px;padding:18px 18px 14px}
-  .logo-mark{width:34px;height:34px;border-radius:10px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
-  .logo-name{color:#fff;font-weight:700;font-size:15px;line-height:1.1}
-  .logo-sub{font-size:10.5px;color:var(--sidebar-ink);margin-top:2px}
-  .nav{flex:1;overflow-y:auto;padding:6px 10px 10px}
-  .nav-group{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7686;padding:16px 10px 6px}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:13.5px;color:var(--sidebar-ink);margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
-  .nav-item:hover{background:rgba(255,255,255,.05);color:#e8edf4}
-  .nav-item.active{background:var(--sidebar-active);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--brand)}
-  .nav-item .ico{width:20px;text-align:center;font-size:15px;flex-shrink:0}
-  .sidebar-foot{border-top:1px solid #232d3c;padding:12px 16px;display:flex;align-items:center;gap:10px}
-  .sf-avatar{width:32px;height:32px;border-radius:50%;background:#31507f;color:#cfe0fb;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px}
-  .sf-name{color:#e8edf4;font-size:12.5px;font-weight:600;line-height:1.15}
-  .sf-role{font-size:10.5px;color:#7d8898}
-  .main{flex:1;min-width:0;display:flex;flex-direction:column}
-  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:14px 28px;display:flex;align-items:center;gap:14px;}
-  .tb-title{font-size:17px;font-weight:700;letter-spacing:-.01em}
-  .tb-crumb{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
-  .tb-spacer{flex:1}
-  .env-badge{font-size:11px;font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border:1px solid #cddcf7;border-radius:8px;padding:5px 10px}
-  .content{padding:22px 28px 60px;max-width:1240px;width:100%;margin:0 auto}
-  .view{display:none} .view.active{display:block}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
-  .card-title{font-size:14px;font-weight:700;letter-spacing:-.01em}
-  .card-sub{font-size:11.5px;color:var(--ink-faint);margin-top:3px}
-  .card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-  .grid{display:grid;gap:16px} .g2{grid-template-columns:1fr 1fr}
-  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
-  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
-  .kpi-label{font-size:11.5px;color:var(--ink-soft);font-weight:600}
-  .kpi-value{font-size:26px;font-weight:650;letter-spacing:-.02em;margin-top:6px;line-height:1}
-  .kpi-delta{font-size:11.5px;margin-top:7px;font-weight:600;color:var(--ink-faint)}
-  .kpi-delta.up{color:#006300} .kpi-delta.down{color:var(--crit)}
-  .kpi-note{font-size:10.5px;color:var(--ink-faint);margin-top:4px}
-  table.data{width:100%;border-collapse:collapse;font-size:12.5px}
-  table.data th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:700;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
-  table.data td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
-  table.data td.num,table.data th.num{text-align:right;font-variant-numeric:tabular-nums}
-  .banner{display:flex;align-items:center;gap:14px;border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;border:1px solid}
-  .banner.ok{background:var(--ok-bg);border-color:#cfe9cf}
-  .banner .b-ico{font-size:22px} .banner .b-t{font-weight:700;font-size:14.5px} .banner .b-s{font-size:12px;color:var(--ink-soft);margin-top:2px}
-  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:8px;padding:4px 9px}
-  .chip.ok{color:#0a7a0a;background:var(--ok-bg)} .chip.warn{color:var(--warn);background:var(--warn-bg)} .chip.crit{color:var(--crit);background:var(--crit-bg)} .chip.neutral{color:var(--ink-soft);background:#eef1f6}
-  .action-btn{font-size:12px; font-weight:700; color:var(--brand); border:none; background:none; cursor:pointer; padding:4px 8px; border-radius:6px; font-family:inherit;}
-  .action-btn:hover{background:var(--brand-soft);}
-  .primary-btn{padding:8px 16px; background:var(--brand); color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-family:inherit;}
-  .primary-btn:hover{background:var(--brand-ink);}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgeCare · Suscripciones y Pagos</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --ink: #1f2733;
+      --ink-soft: #5b6573;
+      --ink-faint: #8b95a3;
+      --line: #e4e8ee;
+      --line-strong: #cfd6df;
+      --brand: #3b6fd4;
+      --brand-ink: #2b55a8;
+      --brand-soft: #e7eefb;
+      --sidebar: #141b26;
+      --sidebar-ink: #aeb8c6;
+      --sidebar-active: #1f2b3d;
+      --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+      --ok: #0ca30c; --ok-bg: #e9f6e9;
+      --warn: #b97800; --warn-bg: #fdf3dc;
+      --crit: #d03b3b; --crit-bg: #fbe7e7;
+      --radius: 14px;
+      --shadow: 0 1px 2px rgba(31,39,51,.05), 0 8px 24px rgba(31,39,51,.06);
+    }
 
-  /* Tabs UI */
-  .tabs{display:flex; gap:20px; border-bottom:1px solid var(--line); margin-bottom:20px;}
-  .tab-btn{padding:10px 4px; border:none; background:none; font-size:14px; font-weight:600; color:var(--ink-faint); cursor:pointer; border-bottom:2px solid transparent; font-family:inherit;}
-  .tab-btn.active{color:var(--brand); border-bottom-color:var(--brand);}
-  .tab-pane{display:none;} .tab-pane.active{display:block;}
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+    }
 
-  /* Forms & Filters */
-  .toolbar{display:flex; gap:12px; margin-bottom:16px;}
-  .input-text{padding:8px 12px; border:1px solid var(--line-strong); border-radius:8px; font-size:13px; font-family:inherit; min-width:250px;}
-  .input-select{padding:8px 12px; border:1px solid var(--line-strong); border-radius:8px; font-size:13px; font-family:inherit; background:#fff;}
+    /* Estilos del Sidebar */
+    .sidebar-wrapper {
+      width: 240px;
+      background: var(--sidebar);
+      color: var(--sidebar-ink);
+      flex-shrink: 0;
+      min-height: 100vh;
+    }
 
-  /* Modals */
-  .modal-overlay{position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(31,39,51,0.6); display:none; align-items:center; justify-content:center; z-index:100;}
-  .modal-overlay.active{display:flex;}
-  .modal{background:#fff; border-radius:var(--radius); padding:24px; width:450px; max-width:90%; box-shadow:var(--shadow);}
-  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;}
-  .modal-title{font-size:16px; font-weight:700;}
-  .modal-close{background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-faint);}
-  .modal-body{margin-bottom:24px; font-size:13.5px; line-height:1.5;}
-  .modal-body strong{display:inline-block; width:120px; color:var(--ink-soft);}
-  .modal-body .form-group{margin-bottom:14px;}
-  .modal-body label{display:block; font-weight:600; font-size:12px; color:var(--ink-soft); margin-bottom:6px;}
-  .modal-body select{width:100%; padding:10px; border-radius:8px; border:1px solid var(--line-strong);}
-  .modal-footer{display:flex; justify-content:flex-end; gap:10px;}
-  .btn-outline{padding:8px 16px; background:#fff; color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; font-weight:600; cursor:pointer;}
-</style>
+    .offcanvas.sidebar-mobile {
+      background: var(--sidebar);
+      color: var(--sidebar-ink);
+      width: 260px;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .nav-group {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #6b7686;
+      padding: 16px 10px 6px;
+    }
+
+    .nav-item-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--sidebar-ink);
+      margin-bottom: 2px;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item-btn:hover {
+      background: rgba(255,255,255,.05);
+      color: #e8edf4;
+    }
+
+    .nav-item-btn.active {
+      background: var(--sidebar-active);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: inset 3px 0 0 var(--brand);
+    }
+
+    .sf-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #31507f;
+      color: #cfe0fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    /* Topbar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+      background: rgba(244,246,249,.92);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .env-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0ca30c;
+      background: #e9f6e9;
+      border: 1px solid #cfe9cf;
+      border-radius: 8px;
+      padding: 5px 10px;
+    }
+
+    /* Tarjetas y KPIs */
+    .card-custom {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      height: 100%;
+    }
+
+    .kpi-label { font-size: 11.5px; color: var(--ink-soft); font-weight: 600; }
+    .kpi-value { font-size: 24px; font-weight: 650; letter-spacing: -.02em; margin-top: 6px; line-height: 1; }
+    .kpi-delta { font-size: 11.5px; margin-top: 7px; font-weight: 600; color: var(--ink-faint); }
+    .kpi-delta.up { color: #006300; }
+    .kpi-delta.down { color: var(--crit); }
+    .kpi-note { font-size: 10.5px; color: var(--ink-faint); margin-top: 4px; }
+
+    /* Chips de Estado */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 4px 9px;
+    }
+    .chip.ok { color: #0a7a0a; background: var(--ok-bg); }
+    .chip.warn { color: var(--warn); background: var(--warn-bg); }
+    .chip.crit { color: var(--crit); background: var(--crit-bg); }
+    .chip.neutral { color: var(--ink-soft); background: #eef1f6; }
+
+    .action-btn {
+      font-size: 12px; font-weight: 700; color: var(--brand); border: none; background: none; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    }
+    .action-btn:hover { background: var(--brand-soft); }
+
+    .view { display: none; }
+    .view.active { display: block; }
+  </style>
 </head>
 <body>
 
-<aside class="sidebar">
-  <div class="logo">
-    <div class="logo-mark">A</div>
-    <div><div class="logo-name">AgeCare</div><div class="logo-sub">Consola Financiera</div></div>
-  </div>
-  <nav class="nav">
-    <div class="nav-group">Negocio y Ventas</div>
-    <button class="nav-item" data-view="comercial" onclick="switchView('comercial')"><span class="ico">📈</span>Suscripciones y MRR</button>
-    <button class="nav-item active" data-view="pagos" onclick="switchView('pagos')"><span class="ico">💳</span>Pasarela de Pagos</button>
-  </nav>
-  <div class="sidebar-foot">
-    <div class="sf-avatar">EQ</div>
-    <div><div class="sf-name">Equipo Desarrollo</div><div class="sf-role">Duoc UC</div></div>
-  </div>
-</aside>
+<div class="d-flex min-vh-100">
 
-<div class="main">
-  <header class="topbar">
-    <div>
-      <div class="tb-title" id="tb-title">Pasarela de Pagos</div>
-      <div class="tb-crumb" id="tb-crumb">Negocio y Ventas · Transacciones y Gestión de Cobros</div>
+  <!-- SIDEBAR DESKTOP -->
+  <aside class="sidebar-wrapper d-none d-lg-flex flex-column sticky-top">
+    <div class="logo d-flex align-items-center gap-2 p-3">
+      <div class="logo-mark">A</div>
+      <div>
+        <div class="fw-bold text-white fs-6 lh-1">AgeCare</div>
+        <div class="text-secondary" style="font-size: 10.5px;">Consola Financiera</div>
+      </div>
     </div>
-    <div class="tb-spacer"></div>
-    <span class="env-badge" style="background:#e9f6e9; color:#0ca30c; border-color:#cfe9cf;">API Conectada (Sandbox)</span>
-  </header>
-  
-  <main class="content">
+    
+    <nav class="flex-grow-1 px-2 py-1">
+      <div class="nav-group">Negocio y Ventas</div>
+      <button class="nav-item-btn nav-btn-comercial" onclick="switchView('comercial')"><span class="fs-6">📈</span> Suscripciones y MRR</button>
+      <button class="nav-item-btn nav-btn-pagos active" onclick="switchView('pagos')"><span class="fs-6">💳</span> Pasarela de Pagos</button>
+    </nav>
 
-    <!-- VISTA COMERCIAL (OCULTA POR DEFECTO) -->
-    <section class="view" id="view-comercial">
-      <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-        <div class="kpi"><div class="kpi-label">Usuarios activos</div><div class="kpi-value">9.840</div><div class="kpi-delta up">+3,1% vs mes anterior</div></div>
-        <div class="kpi"><div class="kpi-label">En plan de pago</div><div class="kpi-value">940</div><div class="kpi-note">Dorado + Platino + Proveedor</div></div>
-        <div class="kpi"><div class="kpi-label">MRR (Suscripciones)</div><div class="kpi-value">$3.46M</div><div class="kpi-delta up">+5,2% vs mes anterior</div></div>
-        <div class="kpi"><div class="kpi-label">Tasa Churn</div><div class="kpi-value">3.2%</div><div class="kpi-delta down">Revisar cancelaciones</div></div>
+    <div class="p-3 border-top border-dark d-flex align-items-center gap-2">
+      <div class="sf-avatar">EQ</div>
+      <div>
+        <div class="text-white fw-semibold lh-sm" style="font-size: 12.5px;">Equipo Desarrollo</div>
+        <div class="text-secondary" style="font-size: 10.5px;">Duoc UC</div>
       </div>
-      <div class="placeholder-box" style="margin-top:20px;">
-        <div style="font-size:34px;margin-bottom:12px">📈</div>
-        <div style="font-size:16px;font-weight:700;color:var(--ink-soft)">Módulo Analítico Activo</div>
-        <p style="margin-top:8px;">Las gráficas de comportamiento se alimentan mediante jobs programados. Vaya a <b>Pasarela de Pagos</b> para ver la lógica transaccional.</p>
-      </div>
-    </section>
+    </div>
+  </aside>
 
-    <!-- VISTA PAGOS (ACTIVA) -->
-    <section class="view active" id="view-pagos">
-      
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('tab-trx', this)">Transacciones Recientes</button>
-        <button class="tab-btn" onclick="switchTab('tab-subs', this)">Gestión de Suscripciones</button>
+  <!-- SIDEBAR MOBILE (OFFCANVAS) -->
+  <div class="offcanvas offcanvas-start sidebar-mobile" tabindex="-1" id="mobileSidebar">
+    <div class="offcanvas-header border-bottom border-dark">
+      <div class="d-flex align-items-center gap-2">
+        <div class="logo-mark">A</div>
+        <span class="fw-bold text-white">AgeCare</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body px-2">
+      <div class="nav-group">Negocio y Ventas</div>
+      <button class="nav-item-btn nav-btn-comercial" data-bs-dismiss="offcanvas" onclick="switchView('comercial')">📈 Suscripciones y MRR</button>
+      <button class="nav-item-btn nav-btn-pagos active" data-bs-dismiss="offcanvas" onclick="switchView('pagos')">💳 Pasarela de Pagos</button>
+    </div>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div class="flex-grow-1 d-flex flex-column min-vw-0">
+    
+    <!-- TOPBAR -->
+    <header class="topbar px-3 px-lg-4 py-3 d-flex align-items-center gap-3">
+      <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+        <i class="bi bi-list fs-5"></i>
+      </button>
+
+      <div>
+        <h1 class="h6 fw-bold mb-0" id="tb-title">Pasarela de Pagos</h1>
+        <div class="text-muted" style="font-size:11.5px" id="tb-crumb">Negocio y Ventas · Transacciones y Gestión de Cobros</div>
       </div>
 
-      <!-- TAB: TRANSACCIONES -->
-      <div id="tab-trx" class="tab-pane active">
-        <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
-          <div class="kpi"><div class="kpi-label">Transacciones Aprobadas (Hoy)</div><div class="kpi-value">14</div><div class="kpi-delta up">+$140.000 CLP</div></div>
-          <div class="kpi"><div class="kpi-label">Cobros Fallidos / Rechazados</div><div class="kpi-value">3</div><div class="kpi-delta down">Requieren seguimiento</div></div>
-          <div class="kpi"><div class="kpi-label">Tasa de Éxito de Pago</div><div class="kpi-value">94.5%</div><div class="kpi-delta up">+1.2% vs semana anterior</div></div>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="env-badge d-none d-sm-inline-block">API Conectada (Sandbox)</span>
+      </div>
+    </header>
+
+    <!-- CONTENT CONTAINER -->
+    <main class="container-fluid px-3 px-lg-4 py-4 max-width-1200">
+
+      <!-- VISTA COMERCIAL -->
+      <section class="view" id="view-comercial">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Usuarios activos</div>
+              <div class="kpi-value">9.840</div>
+              <div class="kpi-delta up">+3,1% vs mes anterior</div>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-label">En plan de pago</div>
+              <div class="kpi-value">940</div>
+              <div class="kpi-note">Dorado + Platino + Proveedor</div>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-label">MRR (Suscripciones)</div>
+              <div class="kpi-value">$3.46M</div>
+              <div class="kpi-delta up">+5,2% vs mes anterior</div>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Tasa Churn</div>
+              <div class="kpi-value">3.2%</div>
+              <div class="kpi-delta down">Revisar cancelaciones</div>
+            </div>
+          </div>
         </div>
 
-        <div class="card">
-          <div class="card-head">
-            <div><div class="card-title">Auditoría Transaccional</div><div class="card-sub">Registro de cobros y devoluciones en tiempo real</div></div>
-            <button class="primary-btn">Exportar a CSV</button>
-          </div>
+        <div class="card-custom text-center py-5">
+          <div class="display-6 mb-2">📈</div>
+          <div class="fw-bold text-secondary">Módulo Analítico Activo</div>
+          <p class="text-muted small mb-0 mt-1">Las gráficas de comportamiento se alimentan mediante jobs programados. Vaya a <b>Pasarela de Pagos</b> para ver la lógica transaccional.</p>
+        </div>
+      </section>
+
+      <!-- VISTA PAGOS -->
+      <section class="view active" id="view-pagos">
+        
+        <!-- PESTAÑAS / TABS -->
+        <ul class="nav nav-tabs border-bottom mb-4" id="pagosTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold text-dark" id="trx-tab" data-bs-toggle="tab" data-bs-target="#tab-trx" type="button">Transacciones Recientes</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link text-secondary fw-semibold" id="subs-tab" data-bs-toggle="tab" data-bs-target="#tab-subs" type="button">Gestión de Suscripciones</button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="pagosTabsContent">
           
-          <div class="toolbar">
-            <input type="text" class="input-text" placeholder="Buscar por ID, Usuario o Agencia...">
-            <select class="input-select">
-              <option>Todos los estados</option>
-              <option>Aprobado</option>
-              <option>Fallido</option>
-              <option>Reembolsado</option>
-            </select>
+          <!-- TAB: TRANSACCIONES -->
+          <div class="tab-pane fade show active" id="tab-trx" role="tabpanel">
+            
+            <div class="row g-3 mb-4">
+              <div class="col-12 col-md-4">
+                <div class="kpi-card">
+                  <div class="kpi-label">Transacciones Aprobadas (Hoy)</div>
+                  <div class="kpi-value">14</div>
+                  <div class="kpi-delta up">+$140.000 CLP</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="kpi-card">
+                  <div class="kpi-label">Cobros Fallidos / Rechazados</div>
+                  <div class="kpi-value">3</div>
+                  <div class="kpi-delta down">Requieren seguimiento</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="kpi-card">
+                  <div class="kpi-label">Tasa de Éxito de Pago</div>
+                  <div class="kpi-value">94.5%</div>
+                  <div class="kpi-delta up">+1.2% vs semana anterior</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AUDITORÍA TRANSACCIONAL -->
+            <div class="card-custom">
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                  <h2 class="h6 fw-bold mb-0">Auditoría Transaccional</h2>
+                  <div class="text-muted" style="font-size:11.5px">Registro de cobros y devoluciones en tiempo real</div>
+                </div>
+                <button class="btn btn-primary btn-sm fw-semibold" onclick="exportTableToCSV('auditoria_transacciones.csv')">
+                  <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar a CSV
+                </button>
+              </div>
+
+              <!-- Filtros Responsivos e Interactivos -->
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6 col-lg-4">
+                  <input type="text" id="searchTrx" class="form-control form-control-sm" placeholder="Buscar por ID, Usuario o Agencia..." onkeyup="filterTransactions()">
+                </div>
+                <div class="col-12 col-md-4 col-lg-3">
+                  <select id="selectStatus" class="form-select form-select-sm" onchange="filterTransactions()">
+                    <option value="Todos">Todos los estados</option>
+                    <option value="Aprobado">Aprobado</option>
+                    <option value="Fallido">Fallido</option>
+                    <option value="Reembolsado">Reembolsado</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tabla de Transacciones -->
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;" id="trxTable">
+                  <thead class="table-light text-uppercase text-muted fs-7">
+                    <tr>
+                      <th>ID Transacción</th>
+                      <th>Usuario / Agencia</th>
+                      <th>Plan</th>
+                      <th class="text-end">Monto (CLP)</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr data-status="Aprobado">
+                      <td><span class="font-monospace text-muted">#TRX-9982</span></td>
+                      <td class="fw-semibold">Familia Pérez Muñoz</td>
+                      <td><span class="chip neutral">Platino</span></td>
+                      <td class="text-end">$10.000</td>
+                      <td><span class="chip ok">✔ Aprobado</span></td>
+                      <td><button class="action-btn" data-bs-toggle="modal" data-bs-target="#modal-detalle">Ver Recibo</button></td>
+                    </tr>
+                    <tr data-status="Aprobado">
+                      <td><span class="font-monospace text-muted">#TRX-9981</span></td>
+                      <td class="fw-semibold">Agencia Cuidados Vitales SPA</td>
+                      <td><span class="chip neutral">Proveedor</span></td>
+                      <td class="text-end">$5.000</td>
+                      <td><span class="chip ok">✔ Aprobado</span></td>
+                      <td><button class="action-btn" data-bs-toggle="modal" data-bs-target="#modal-detalle">Ver Recibo</button></td>
+                    </tr>
+                    <tr data-status="Fallido">
+                      <td><span class="font-monospace text-muted">#TRX-9980</span></td>
+                      <td class="fw-semibold">Juan Gómez</td>
+                      <td><span class="chip neutral">Dorado</span></td>
+                      <td class="text-end">$1.000</td>
+                      <td><span class="chip crit">✖ Fondos Insuf.</span></td>
+                      <td><button class="action-btn text-danger" onclick="alert('Iniciando reintento de cobro con la API...')">Reintentar</button></td>
+                    </tr>
+                    <tr data-status="Reembolsado">
+                      <td><span class="font-monospace text-muted">#TRX-9979</span></td>
+                      <td class="fw-semibold">Familia Rojas Silva</td>
+                      <td><span class="chip neutral">Platino</span></td>
+                      <td class="text-end">$10.000</td>
+                      <td><span class="chip warn">▲ Reembolsado</span></td>
+                      <td><button class="action-btn text-secondary" data-bs-toggle="modal" data-bs-target="#modal-detalle">Detalles</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div id="noResultsMsg" class="text-center py-4 text-muted d-none">
+                  <i class="bi bi-search fs-4 d-block mb-1"></i>
+                  <span>No se encontraron transacciones que coincidan con el filtro.</span>
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          <table class="data">
-            <thead>
-              <tr><th>ID Transacción</th><th>Usuario / Agencia</th><th>Plan</th><th class="num">Monto (CLP)</th><th>Estado</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9982</span></td>
-                <td style="font-weight:600">Familia Pérez Muñoz</td>
-                <td><span class="chip neutral">Platino</span></td>
-                <td class="num">$10.000</td>
-                <td><span class="chip ok">✔ Aprobado</span></td>
-                <td><button class="action-btn" onclick="openModal('modal-detalle')">Ver Recibo</button></td>
-              </tr>
-              <tr>
-                <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9981</span></td>
-                <td style="font-weight:600">Agencia Cuidados Vitales SPA</td>
-                <td><span class="chip neutral">Proveedor</span></td>
-                <td class="num">$5.000</td>
-                <td><span class="chip ok">✔ Aprobado</span></td>
-                <td><button class="action-btn" onclick="openModal('modal-detalle')">Ver Recibo</button></td>
-              </tr>
-              <tr>
-                <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9980</span></td>
-                <td style="font-weight:600">Juan Gómez</td>
-                <td><span class="chip neutral">Dorado</span></td>
-                <td class="num">$1.000</td>
-                <td><span class="chip crit">✖ Fondos Insuf.</span></td>
-                <td><button class="action-btn" style="color:var(--crit)" onclick="alert('Iniciando reintento de cobro con la API...')">Reintentar</button></td>
-              </tr>
-              <tr>
-                <td><span style="font-family:monospace; color:var(--ink-faint)">#TRX-9979</span></td>
-                <td style="font-weight:600">Familia Rojas Silva</td>
-                <td><span class="chip neutral">Platino</span></td>
-                <td class="num">$10.000</td>
-                <td><span class="chip warn">▲ Reembolsado</span></td>
-                <td><button class="action-btn" style="color:var(--ink-faint)" onclick="openModal('modal-detalle')">Detalles</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <!-- TAB: SUSCRIPCIONES -->
+          <div class="tab-pane fade" id="tab-subs" role="tabpanel">
+            <div class="card-custom">
+              <div class="mb-3">
+                <h2 class="h6 fw-bold mb-0">Cuentas y Suscripciones Activas</h2>
+                <div class="text-muted" style="font-size:11.5px">Gestión del ciclo de vida de facturación</div>
+              </div>
 
-      <!-- TAB: SUSCRIPCIONES -->
-      <div id="tab-subs" class="tab-pane">
-        <div class="card">
-          <div class="card-head">
-            <div><div class="card-title">Cuentas y Suscripciones Activas</div><div class="card-sub">Gestión del ciclo de vida de facturación</div></div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;" id="subsTable">
+                  <thead class="table-light text-uppercase text-muted fs-7">
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Plan Actual</th>
+                      <th>Estado Cuenta</th>
+                      <th>Próximo Cobro</th>
+                      <th>Método de Pago</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="fw-semibold">María Inés López</td>
+                      <td><span class="chip neutral">Gratuito</span></td>
+                      <td><span class="chip ok">Activa</span></td>
+                      <td>N/A</td>
+                      <td>No registrado</td>
+                      <td><button class="action-btn" data-bs-toggle="modal" data-bs-target="#modal-upgrade" onclick="prepareUpgradeModal(this)">Modificar Plan</button></td>
+                    </tr>
+                    <tr>
+                      <td class="fw-semibold">Familia Torres</td>
+                      <td><span class="chip ok" style="background:#eef1f6; color:var(--s1)">Platino</span></td>
+                      <td><span class="chip ok">Activa</span></td>
+                      <td>15 Sep 2026</td>
+                      <td>Visa finalizada en 4421</td>
+                      <td><button class="action-btn" data-bs-toggle="modal" data-bs-target="#modal-upgrade" onclick="prepareUpgradeModal(this)">Modificar Plan</button></td>
+                    </tr>
+                    <tr>
+                      <td class="fw-semibold">Roberto Sánchez</td>
+                      <td><span class="chip warn" style="background:#eef1f6; color:var(--s4)">Dorado</span></td>
+                      <td><span class="chip crit">Morosa (Día 2)</span></td>
+                      <td>Vencido</td>
+                      <td>Mastercard en 9901</td>
+                      <td><button class="action-btn" data-bs-toggle="modal" data-bs-target="#modal-upgrade" onclick="prepareUpgradeModal(this)">Modificar Plan</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <table class="data">
-            <thead>
-              <tr><th>Cliente</th><th>Plan Actual</th><th>Estado Cuenta</th><th>Próximo Cobro</th><th>Método de Pago</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="font-weight:600">María Inés López</td>
-                <td><span class="chip neutral">Gratuito</span></td>
-                <td><span class="chip ok">Activa</span></td>
-                <td>N/A</td>
-                <td>No registrado</td>
-                <td><button class="action-btn" onclick="openModal('modal-upgrade')">Modificar Plan</button></td>
-              </tr>
-              <tr>
-                <td style="font-weight:600">Familia Torres</td>
-                <td><span class="chip ok" style="background:#eef1f6;color:var(--s1)">Platino</span></td>
-                <td><span class="chip ok">Activa</span></td>
-                <td>15 Sep 2026</td>
-                <td>Visa finalizada en 4421</td>
-                <td><button class="action-btn" onclick="openModal('modal-upgrade')">Modificar Plan</button></td>
-              </tr>
-              <tr>
-                <td style="font-weight:600">Roberto Sánchez</td>
-                <td><span class="chip warn" style="background:#eef1f6;color:var(--s4)">Dorado</span></td>
-                <td><span class="chip crit">Morosa (Día 2)</span></td>
-                <td>Vencido</td>
-                <td>Mastercard en 9901</td>
-                <td><button class="action-btn" onclick="openModal('modal-upgrade')">Modificar Plan</button></td>
-              </tr>
-            </tbody>
-          </table>
+
         </div>
-      </div>
-    </section>
-  </main>
+
+      </section>
+    </main>
+
+  </div>
 </div>
 
 <!-- MODAL: DETALLE TRANSACCIÓN -->
-<div class="modal-overlay" id="modal-detalle">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Detalle de Transacción #TRX-9982</div>
-      <button class="modal-close" onclick="closeModal('modal-detalle')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p><strong>Cliente:</strong> Familia Pérez Muñoz</p>
-      <p><strong>Fecha y Hora:</strong> 28 Ago 2026, 14:30 hrs</p>
-      <p><strong>Concepto:</strong> Renovación Plan Platino (Mensual)</p>
-      <p><strong>Método de Pago:</strong> Tarjeta Visa **** 1234</p>
-      <p><strong>ID Pasarela:</strong> ch_1N2M3L4K5J6H7G8F</p>
-      <hr style="border:none; border-top:1px solid var(--line); margin:14px 0;">
-      <p><strong>Total Pagado:</strong> <span style="font-size:18px; color:var(--ok); font-weight:700;">$10.000 CLP</span></p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-outline" onclick="closeModal('modal-detalle')">Cerrar</button>
-      <button class="btn-outline" style="color:var(--crit); border-color:var(--crit);">Aplicar Reembolso</button>
-      <button class="primary-btn">Descargar Boleta</button>
+<div class="modal fade" id="modal-detalle" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fs-6 fw-bold">Detalle de Transacción #TRX-9982</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-3">
+        <div class="row g-2">
+          <div class="col-4 text-muted fw-semibold">Cliente:</div>
+          <div class="col-8 fw-semibold">Familia Pérez Muñoz</div>
+
+          <div class="col-4 text-muted fw-semibold">Fecha y Hora:</div>
+          <div class="col-8">28 Ago 2026, 14:30 hrs</div>
+
+          <div class="col-4 text-muted fw-semibold">Concepto:</div>
+          <div class="col-8">Renovación Plan Platino (Mensual)</div>
+
+          <div class="col-4 text-muted fw-semibold">Método Pago:</div>
+          <div class="col-8">Tarjeta Visa **** 1234</div>
+
+          <div class="col-4 text-muted fw-semibold">ID Pasarela:</div>
+          <div class="col-8"><code class="text-dark">ch_1N2M3L4K5J6H7G8F</code></div>
+        </div>
+        <hr class="my-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Total Pagado:</span>
+          <span class="fs-5 text-success fw-bold">$10.000 CLP</span>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-outline-danger btn-sm">Aplicar Reembolso</button>
+        <button type="button" class="btn btn-primary btn-sm">Descargar Boleta</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- MODAL: MODIFICAR PLAN -->
-<div class="modal-overlay" id="modal-upgrade">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Modificar Suscripción</div>
-      <button class="modal-close" onclick="closeModal('modal-upgrade')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Cliente Seleccionado</label>
-        <input type="text" class="input-text" style="width:100%; background:#f4f6f9;" value="Cliente / Familia" disabled>
+<div class="modal fade" id="modal-upgrade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fs-6 fw-bold">Modificar Suscripción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="form-group">
-        <label>Seleccionar Nuevo Plan</label>
-        <select>
-          <option>Gratuito ($0)</option>
-          <option>Dorado ($1.000 CLP / mes)</option>
-          <option>Platino ($10.000 CLP / mes)</option>
-          <option>Proveedor ($5.000 CLP / mes)</option>
-        </select>
+      <div class="modal-body py-3">
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-muted small">Cliente Seleccionado</label>
+          <input type="text" id="modalClientName" class="form-control form-control-sm bg-light" value="Cliente / Familia" disabled>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-muted small">Seleccionar Nuevo Plan</label>
+          <select id="modalPlanSelect" class="form-select form-select-sm">
+            <option value="Gratuito">Gratuito ($0)</option>
+            <option value="Dorado">Dorado ($1.000 CLP / mes)</option>
+            <option value="Platino">Platino ($10.000 CLP / mes)</option>
+            <option value="Proveedor">Proveedor ($5.000 CLP / mes)</option>
+          </select>
+        </div>
+        <p class="text-muted small mb-0">
+          Nota: Al realizar un upgrade a un plan de pago, el sistema emitirá un cobro prorrateado automático utilizando la pasarela conectada.
+        </p>
       </div>
-      <p style="color:var(--ink-soft); font-size:11px; margin-top:10px;">
-        Nota: Al realizar un upgrade a un plan de pago, el sistema emitirá un cobro prorrateado automático utilizando la pasarela conectada.
-      </p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-outline" onclick="closeModal('modal-upgrade')">Cancelar</button>
-      <button class="primary-btn" onclick="alert('Simulación: Solicitud de cambio de plan enviada al backend.'); closeModal('modal-upgrade');">Guardar Cambios</button>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="savePlanChange()">Guardar Cambios</button>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- COMPONENTE TOAST DE NOTIFICACIÓN EN PANTALLA -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+  <div id="toastNotification" class="toast align-items-center text-white bg-dark border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2 fw-semibold" id="toastMessage">
+        <i class="bi bi-check-circle-fill text-success fs-6"></i> Plan Actualizado
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-  // Navegación principal
   const viewMeta = {
     comercial: ['Suscripciones y MRR', 'Negocio y Ventas · Métricas de conversión y planes'],
     pagos: ['Pasarela de Pagos', 'Negocio y Ventas · Transacciones y Gestión de Cobros']
   };
 
+  let currentRowEditing = null;
+
   function switchView(viewId) {
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.nav-item-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(`.nav-btn-${viewId}`).forEach(b => b.classList.add('active'));
+
     document.querySelectorAll('.view').forEach(s => s.classList.remove('active'));
     document.getElementById('view-' + viewId).classList.add('active');
+
     document.getElementById('tb-title').textContent = viewMeta[viewId][0];
     document.getElementById('tb-crumb').textContent = viewMeta[viewId][1];
   }
 
-  // Pestañas (Tabs) dentro de Pagos
-  function switchTab(tabId, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
+  // FILTRADO DE TRANSACCIONES
+  function filterTransactions() {
+    const textFilter = document.getElementById('searchTrx').value.toLowerCase().trim();
+    const statusFilter = document.getElementById('selectStatus').value;
+    const rows = document.querySelectorAll('#trxTable tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const rowText = row.innerText.toLowerCase();
+      const rowStatus = row.getAttribute('data-status');
+
+      const matchesText = textFilter === '' || rowText.includes(textFilter);
+      const matchesStatus = statusFilter === 'Todos' || rowStatus === statusFilter;
+
+      if (matchesText && matchesStatus) {
+        row.classList.remove('d-none');
+        visibleCount++;
+      } else {
+        row.classList.add('d-none');
+      }
+    });
+
+    const noResultsMsg = document.getElementById('noResultsMsg');
+    if (visibleCount === 0) {
+      noResultsMsg.classList.remove('d-none');
+    } else {
+      noResultsMsg.classList.add('d-none');
+    }
   }
 
-  // Lógica de Modales
-  function openModal(id) {
-    document.getElementById(id).classList.add('active');
+  // EXPORTAR TABLA A CSV
+  function exportTableToCSV(filename = 'transacciones.csv') {
+    const table = document.getElementById('trxTable');
+    const rows = table.querySelectorAll('tr');
+    let csv = [];
+
+    rows.forEach(row => {
+      if (row.classList.contains('d-none')) return;
+
+      const cols = row.querySelectorAll('th, td');
+      let rowData = [];
+
+      cols.forEach((col, index) => {
+        if (index === cols.length - 1) return;
+
+        let text = col.innerText.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim();
+        text = text.replace(/"/g, '""');
+        rowData.push(`"${text}"`);
+      });
+
+      if (rowData.length > 0) {
+        csv.push(rowData.join(';'));
+      }
+    });
+
+    if (csv.length === 0) {
+      alert('No hay datos visibles para exportar.');
+      return;
+    }
+
+    const csvContent = '\uFEFF' + csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
-  function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
+
+  // PREPARAR MODAL CON EL CLIENTE SELECCIONADO
+  function prepareUpgradeModal(button) {
+    const row = button.closest('tr');
+    currentRowEditing = row;
+
+    const clientName = row.children[0].innerText.trim();
+    const currentPlanText = row.children[1].innerText.trim();
+
+    document.getElementById('modalClientName').value = clientName;
+
+    const select = document.getElementById('modalPlanSelect');
+    for (let option of select.options) {
+      if (option.value.toLowerCase() === currentPlanText.toLowerCase()) {
+        option.selected = true;
+        break;
+      }
+    }
+  }
+
+  // GUARDAR CAMBIO DE PLAN Y ACTUALIZAR TABLA VISUALMENTE
+  function savePlanChange() {
+    if (!currentRowEditing) return;
+
+    const select = document.getElementById('modalPlanSelect');
+    const selectedPlan = select.value;
+    let newChipHTML = '';
+
+    switch(selectedPlan) {
+      case 'Gratuito':
+        newChipHTML = '<span class="chip neutral">Gratuito</span>';
+        break;
+      case 'Dorado':
+        newChipHTML = '<span class="chip warn" style="background:#eef1f6; color:var(--s4)">Dorado</span>';
+        break;
+      case 'Platino':
+        newChipHTML = '<span class="chip ok" style="background:#eef1f6; color:var(--s1)">Platino</span>';
+        break;
+      case 'Proveedor':
+        newChipHTML = '<span class="chip neutral">Proveedor</span>';
+        break;
+      default:
+        newChipHTML = `<span class="chip neutral">${selectedPlan}</span>`;
+    }
+
+    currentRowEditing.children[1].innerHTML = newChipHTML;
+
+    // Cerrar modal
+    const modalEl = document.getElementById('modal-upgrade');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) {
+      modalInstance.hide();
+    }
+
+    // Mostrar Notificación en pantalla 
+    showToastNotification('Plan Actualizado');
+  }
+
+  // MOSTRAR NOTIFICACIÓN
+  function showToastNotification(message) {
+    const toastEl = document.getElementById('toastNotification');
+    const toastBody = document.getElementById('toastMessage');
+    toastBody.innerHTML = `<i class="bi bi-check-circle-fill text-success fs-6"></i> ${message}`;
+
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
   }
 </script>
+
 </body>
 </html>
