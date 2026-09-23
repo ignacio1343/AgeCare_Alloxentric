@@ -1,0 +1,3200 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>AgeCare · Administración</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <!-- Bootstrap Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  >
+
+  <style>
+
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+
+      --ink: #1f2733;
+      --ink-soft: #5b6573;
+      --ink-faint: #8b95a3;
+
+      --line: #e4e8ee;
+      --line-strong: #cfd6df;
+
+      --brand: #3b6fd4;
+      --brand-ink: #2b55a8;
+      --brand-soft: #e7eefb;
+
+      --sidebar: #141b26;
+      --sidebar-ink: #aeb8c6;
+      --sidebar-active: #1f2b3d;
+
+      --s1: #2a78d6;
+      --s2: #eb6834;
+      --s3: #1baf7a;
+      --s4: #eda100;
+
+      --ok: #0ca30c;
+      --ok-bg: #e9f6e9;
+
+      --warn: #b97800;
+      --warn-bg: #fdf3dc;
+
+      --crit: #d03b3b;
+      --crit-bg: #fbe7e7;
+
+      --radius: 14px;
+
+      --shadow:
+        0 1px 2px rgba(31,39,51,.05),
+        0 8px 24px rgba(31,39,51,.06);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    body {
+      margin: 0;
+      font-family:
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+
+      background: var(--bg);
+      color: var(--ink);
+
+      font-size: 14px;
+    }
+
+
+    /* =========================================
+       LOADING INICIAL
+    ========================================= */
+
+    #sessionLoader {
+      min-height: 100vh;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: var(--bg);
+    }
+
+
+    /* =========================================
+       SIDEBAR
+    ========================================= */
+
+    .sidebar-wrapper {
+      width: 240px;
+      background: var(--sidebar);
+      color: var(--sidebar-ink);
+      flex-shrink: 0;
+      min-height: 100vh;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+    }
+
+
+    .offcanvas.sidebar-mobile {
+      background: var(--sidebar);
+      color: var(--sidebar-ink);
+      width: 270px;
+    }
+
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+
+    .nav-group {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #6b7686;
+      padding: 16px 10px 6px;
+    }
+
+
+    .nav-item-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--sidebar-ink);
+      margin-bottom: 2px;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+
+    .nav-item-btn:hover {
+      background: rgba(255,255,255,.05);
+      color: #e8edf4;
+    }
+
+
+    .nav-item-btn.active {
+      background: var(--sidebar-active);
+      color: #fff;
+      font-weight: 600;
+      box-shadow:
+        inset 3px 0 0 var(--brand);
+    }
+
+
+    .logout-btn {
+      color: #ef8686;
+    }
+
+
+    .logout-btn:hover {
+      background: rgba(208,59,59,.12);
+      color: #ffabab;
+    }
+
+
+    /* =========================================
+       USUARIO
+    ========================================= */
+
+    .sf-avatar {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border-radius: 50%;
+      background: #31507f;
+      color: #cfe0fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+
+    .user-name {
+      font-size: 12.5px;
+      max-width: 150px;
+    }
+
+
+    .user-role {
+      font-size: 10.5px;
+      text-transform: capitalize;
+    }
+
+
+    /* =========================================
+       TOPBAR
+    ========================================= */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+      background: rgba(244,246,249,.92);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--line);
+    }
+
+
+    .env-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0ca30c;
+      background: #e9f6e9;
+      border: 1px solid #cfe9cf;
+      border-radius: 8px;
+      padding: 5px 10px;
+    }
+
+
+    /* =========================================
+       TARJETAS
+    ========================================= */
+
+    .card-custom {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      height: 100%;
+    }
+
+
+    .kpi-label {
+      font-size: 11.5px;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 650;
+      letter-spacing: -.02em;
+      margin-top: 6px;
+      line-height: 1;
+    }
+
+
+    .kpi-delta {
+      font-size: 11.5px;
+      margin-top: 7px;
+      font-weight: 600;
+      color: var(--ink-faint);
+    }
+
+
+    .kpi-delta.up {
+      color: #006300;
+    }
+
+
+    .kpi-delta.down {
+      color: var(--crit);
+    }
+
+
+    .kpi-note {
+      font-size: 10.5px;
+      color: var(--ink-faint);
+      margin-top: 4px;
+    }
+
+
+    /* =========================================
+       CHIPS
+    ========================================= */
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+
+
+    .chip.ok {
+      color: #0a7a0a;
+      background: var(--ok-bg);
+    }
+
+
+    .chip.warn {
+      color: var(--warn);
+      background: var(--warn-bg);
+    }
+
+
+    .chip.crit {
+      color: var(--crit);
+      background: var(--crit-bg);
+    }
+
+
+    .chip.neutral {
+      color: var(--ink-soft);
+      background: #eef1f6;
+    }
+
+
+    /* =========================================
+       BOTONES
+    ========================================= */
+
+    .action-btn {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--brand);
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+
+    .action-btn:hover {
+      background: var(--brand-soft);
+    }
+
+
+    /* =========================================
+       VISTAS
+    ========================================= */
+
+    .view {
+      display: none;
+    }
+
+
+    .view.active {
+      display: block;
+    }
+
+
+    /* =========================================
+       MAIN
+    ========================================= */
+
+    .main-content {
+      min-width: 0;
+    }
+
+
+    .content-container {
+      max-width: 1500px;
+    }
+
+
+    /* =========================================
+       TABLAS
+    ========================================= */
+
+    .table > :not(caption) > * > * {
+      padding-top: .75rem;
+      padding-bottom: .75rem;
+    }
+
+
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+
+    @media (max-width: 767.98px) {
+
+      .kpi-value {
+        font-size: 21px;
+      }
+
+
+      .card-custom {
+        padding: 14px;
+      }
+
+
+      .topbar {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+    }
+  </style>
+
+</head>
+<body>
+
+
+<!-- =========================================
+     CARGANDO SESIÓN
+========================================= -->
+
+<div id="sessionLoader">
+
+  <div class="text-center">
+
+    <div
+      class="spinner-border text-primary mb-3"
+      role="status"
+    >
+      <span class="visually-hidden">
+        Cargando...
+      </span>
+    </div>
+
+    <div class="fw-semibold">
+      Verificando sesión
+    </div>
+
+    <div class="text-muted small mt-1">
+      AgeCare Administration
+    </div>
+  </div>
+</div>
+
+
+
+<!-- =========================================
+     APLICACIÓN
+========================================= -->
+
+<div
+  id="appRoot"
+  class="d-none">
+
+  <div class="d-flex min-vh-100">
+
+
+    <!-- =====================================
+         SIDEBAR DESKTOP
+    ====================================== -->
+
+    <aside
+      class="sidebar-wrapper d-none d-lg-flex flex-column">
+
+      <div
+        class="logo d-flex align-items-center gap-2 p-3">
+
+        <div class="logo-mark">
+          A
+        </div>
+
+        <div>
+
+          <div
+            class="fw-bold text-white fs-6 lh-1"
+          >
+            AgeCare
+          </div>
+
+          <div
+            class="text-secondary"
+            style="font-size: 10.5px;"
+          >
+            Administración
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <nav class="flex-grow-1 px-2 py-1">
+
+        <div class="nav-group">
+          Negocio y Ventas
+        </div>
+
+
+        <button
+          class="nav-item-btn nav-btn-comercial"
+          onclick="switchView('comercial')"
+          type="button"
+        >
+
+          <i class="bi bi-graph-up-arrow fs-6"></i>
+
+          Suscripciones y MRR
+
+        </button>
+
+
+        <button
+          class="nav-item-btn nav-btn-pagos active"
+          onclick="switchView('pagos')"
+          type="button"
+        >
+
+          <i class="bi bi-credit-card fs-6"></i>
+
+          Pasarela de Pagos
+
+        </button>
+
+      </nav>
+
+
+      <!-- USUARIO DESKTOP -->
+
+      <div
+        class="p-3 border-top border-dark"
+      >
+
+        <div
+          class="d-flex align-items-center gap-2 mb-3"
+        >
+
+          <div
+            class="sf-avatar"
+            id="userAvatar"
+          >
+            --
+          </div>
+
+
+          <div class="overflow-hidden">
+
+            <div
+              class="text-white fw-semibold lh-sm text-truncate user-name"
+              id="userName"
+            >
+              Cargando...
+            </div>
+
+            <div
+              class="text-secondary text-truncate user-role"
+              id="userRole"
+            >
+              --
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="nav-item-btn logout-btn"
+          onclick="logout()"
+          type="button"
+        >
+
+          <i class="bi bi-box-arrow-right"></i>
+
+          Cerrar sesión
+
+        </button>
+
+      </div>
+
+    </aside>
+
+
+
+    <!-- =====================================
+         SIDEBAR MOBILE
+    ====================================== -->
+
+    <div
+      class="offcanvas offcanvas-start sidebar-mobile"
+      tabindex="-1"
+      id="mobileSidebar"
+    >
+
+      <div
+        class="offcanvas-header border-bottom border-dark"
+      >
+
+        <div
+          class="d-flex align-items-center gap-2"
+        >
+
+          <div class="logo-mark">
+            A
+          </div>
+
+          <div>
+
+            <div class="fw-bold text-white">
+              AgeCare
+            </div>
+
+            <div
+              class="text-secondary"
+              style="font-size:10px;"
+            >
+              Administración
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="offcanvas"
+          aria-label="Cerrar"
+        ></button>
+
+      </div>
+
+
+      <div class="offcanvas-body px-2">
+
+        <div class="nav-group">
+          Negocio y Ventas
+        </div>
+
+
+        <button
+          class="nav-item-btn nav-btn-comercial"
+          data-bs-dismiss="offcanvas"
+          onclick="switchView('comercial')"
+          type="button"
+        >
+
+          <i class="bi bi-graph-up-arrow"></i>
+
+          Suscripciones y MRR
+
+        </button>
+
+
+        <button
+          class="nav-item-btn nav-btn-pagos active"
+          data-bs-dismiss="offcanvas"
+          onclick="switchView('pagos')"
+          type="button"
+        >
+
+          <i class="bi bi-credit-card"></i>
+
+          Pasarela de Pagos
+
+        </button>
+
+
+        <hr class="border-secondary my-3">
+
+
+        <!-- USUARIO MOBILE -->
+
+        <div class="px-2">
+
+          <div
+            class="d-flex align-items-center gap-2 mb-3"
+          >
+
+            <div
+              class="sf-avatar"
+              id="mobileUserAvatar"
+            >
+              --
+            </div>
+
+
+            <div class="overflow-hidden">
+
+              <div
+                class="text-white fw-semibold text-truncate"
+                id="mobileUserName"
+              >
+                Cargando...
+              </div>
+
+              <div
+                class="text-secondary text-truncate"
+                style="font-size:11px;"
+                id="mobileUserRole"
+              >
+                --
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <button
+            class="nav-item-btn logout-btn"
+            onclick="logout()"
+            type="button"
+          >
+
+            <i class="bi bi-box-arrow-right"></i>
+
+            Cerrar sesión
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- =====================================
+         MAIN
+    ====================================== -->
+
+    <div
+      class="flex-grow-1 d-flex flex-column main-content"
+    >
+
+
+      <!-- TOPBAR -->
+
+      <header
+        class="topbar px-3 px-lg-4 py-3 d-flex align-items-center gap-3"
+      >
+
+        <button
+          class="btn btn-sm btn-outline-secondary d-lg-none"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#mobileSidebar"
+        >
+
+          <i class="bi bi-list fs-5"></i>
+
+        </button>
+
+
+        <div>
+
+          <h1
+            class="h6 fw-bold mb-0"
+            id="tb-title"
+          >
+            Pasarela de Pagos
+          </h1>
+
+
+          <div
+            class="text-muted"
+            style="font-size:11.5px"
+            id="tb-crumb"
+          >
+            Negocio y Ventas · Transacciones y Gestión de Cobros
+          </div>
+
+        </div>
+
+
+        <div
+          class="ms-auto d-flex align-items-center gap-2"
+        >
+
+          <span
+            class="env-badge d-none d-sm-inline-block"
+          >
+            <i
+              class="bi bi-check-circle-fill me-1"
+            ></i>
+
+            Sesión verificada
+          </span>
+
+        </div>
+
+      </header>
+
+
+
+      <!-- =====================================
+           CONTENT
+      ====================================== -->
+
+      <main
+        class="container-fluid content-container px-3 px-lg-4 py-4"
+      >
+
+
+        <!-- =================================
+             VISTA COMERCIAL
+        ================================== -->
+
+        <section
+          class="view"
+          id="view-comercial"
+        >
+
+
+          <div class="row g-3 mb-4">
+
+
+            <div
+              class="col-12 col-sm-6 col-xl-3"
+            >
+
+              <div class="kpi-card">
+
+                <div class="kpi-label">
+                  Usuarios activos
+                </div>
+
+                <div class="kpi-value">
+                  9.840
+                </div>
+
+                <div class="kpi-delta up">
+                  +3,1% vs mes anterior
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            <div
+              class="col-12 col-sm-6 col-xl-3"
+            >
+
+              <div class="kpi-card">
+
+                <div class="kpi-label">
+                  En plan de pago
+                </div>
+
+                <div class="kpi-value">
+                  940
+                </div>
+
+                <div class="kpi-note">
+                  Dorado + Platino + Proveedor
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            <div
+              class="col-12 col-sm-6 col-xl-3"
+            >
+
+              <div class="kpi-card">
+
+                <div class="kpi-label">
+                  MRR (Suscripciones)
+                </div>
+
+                <div class="kpi-value">
+                  $3.46M
+                </div>
+
+                <div class="kpi-delta up">
+                  +5,2% vs mes anterior
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            <div
+              class="col-12 col-sm-6 col-xl-3"
+            >
+
+              <div class="kpi-card">
+
+                <div class="kpi-label">
+                  Tasa Churn
+                </div>
+
+                <div class="kpi-value">
+                  3.2%
+                </div>
+
+                <div class="kpi-delta down">
+                  Revisar cancelaciones
+                </div>
+
+              </div>
+
+            </div>
+
+
+          </div>
+
+
+
+          <div
+            class="card-custom text-center py-5"
+          >
+
+            <div
+              class="display-6 mb-2 text-primary"
+            >
+
+              <i class="bi bi-bar-chart-line"></i>
+
+            </div>
+
+
+            <div
+              class="fw-bold text-secondary"
+            >
+              Módulo Analítico Activo
+            </div>
+
+
+            <p
+              class="text-muted small mb-0 mt-1"
+            >
+              Las gráficas de comportamiento se alimentarán
+              mediante los datos registrados en AgeCare.
+              Vaya a
+              <b>Pasarela de Pagos</b>
+              para visualizar la gestión transaccional.
+            </p>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- =================================
+             VISTA PAGOS
+        ================================== -->
+
+        <section
+          class="view active"
+          id="view-pagos"
+        >
+
+
+          <!-- TABS -->
+
+          <ul
+            class="nav nav-tabs border-bottom mb-4"
+            id="pagosTabs"
+            role="tablist"
+          >
+
+
+            <li
+              class="nav-item"
+              role="presentation"
+            >
+
+              <button
+                class="nav-link active fw-semibold text-dark"
+                id="trx-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#tab-trx"
+                type="button"
+              >
+                Transacciones Recientes
+              </button>
+
+            </li>
+
+
+            <li
+              class="nav-item"
+              role="presentation"
+            >
+
+              <button
+                class="nav-link text-secondary fw-semibold"
+                id="subs-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#tab-subs"
+                type="button"
+              >
+                Gestión de Suscripciones
+              </button>
+
+            </li>
+
+
+          </ul>
+
+
+
+          <div
+            class="tab-content"
+            id="pagosTabsContent"
+          >
+
+
+            <!-- =================================
+                 TRANSACCIONES
+            ================================== -->
+
+            <div
+              class="tab-pane fade show active"
+              id="tab-trx"
+              role="tabpanel"
+            >
+
+
+              <div class="row g-3 mb-4">
+
+
+                <div
+                  class="col-12 col-md-4"
+                >
+
+                  <div class="kpi-card">
+
+                    <div class="kpi-label">
+                      Transacciones Aprobadas (Hoy)
+                    </div>
+
+                    <div class="kpi-value" id="kpiApprovedToday">0</div>
+                    <div class="kpi-delta up" id="kpiApprovedAmount">$0 CLP</div>
+
+                  </div>
+
+                </div>
+
+
+
+                <div
+                  class="col-12 col-md-4"
+                >
+
+                  <div class="kpi-card">
+
+                    <div class="kpi-label">
+                      Cobros Fallidos / Rechazados
+                    </div>
+
+                    <div class="kpi-value" id="kpiFailedTransactions">0</div>
+
+                    <div class="kpi-delta down">
+                      Requieren seguimiento
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+
+                <div
+                  class="col-12 col-md-4"
+                >
+
+                  <div class="kpi-card">
+
+                    <div class="kpi-label">
+                      Tasa de Éxito de Pago
+                    </div>
+
+                    <div class="kpi-value" id="kpiSuccessRate">0%</div>
+
+                    <div class="kpi-delta up">
+                      +1.2% vs semana anterior
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- AUDITORÍA -->
+              <div class="card-custom">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                  <div>
+                    <h2class="h6 fw-bold mb-0">Auditoría Transaccional</h2class=>
+                    <div
+                      class="text-muted"
+                      style="font-size:11.5px">
+                      Registro de cobros y devoluciones
+                    </div>
+                  </div>
+
+
+                  <button
+                    class="btn btn-primary btn-sm fw-semibold"
+                    onclick="exportTableToCSV('auditoria_transacciones.csv')"
+                    type="button">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                    Exportar a CSV
+                  </button>
+                </div>
+                <!-- FILTROS -->
+                <div class="row g-2 mb-3">
+                  <div class="col-12 col-md-6 col-lg-4">
+
+                    <input
+                      type="text"
+                      id="searchTrx"
+                      class="form-control form-control-sm"
+                      placeholder="Buscar por ID, Usuario o Agencia..."
+                      onkeyup="filterTransactions()"
+                    >
+
+                  </div>
+
+
+                  <div
+                    class="col-12 col-md-4 col-lg-3"
+                  >
+
+                    <select
+                      id="selectStatus"
+                      class="form-select form-select-sm"
+                      onchange="filterTransactions()">
+                      <option value="Todos">
+                        Todos los estados
+                      </option>
+                      <option value="Aprobado">
+                        Aprobado
+                      </option>
+                      <option value="Fallido">
+                        Fallido
+                      </option>
+                      <option value="Reembolsado">
+                        Reembolsado
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+
+
+                <!-- TABLA -->
+
+                <div class="table-responsive">
+
+                  <table
+                    class="table table-hover align-middle mb-0"
+                    style="font-size:12.5px;"
+                    id="trxTable"
+                  >
+
+
+                    <thead
+                      class="table-light text-uppercase text-muted"
+                    >
+
+                      <tr>
+
+                        <th>
+                          ID Transacción
+                        </th>
+
+                        <th>
+                          Usuario / Agencia
+                        </th>
+
+                        <th>
+                          Plan
+                        </th>
+
+                        <th class="text-end">
+                          Monto (CLP)
+                        </th>
+
+                        <th>
+                          Estado
+                        </th>
+
+                        <th>
+                          Acciones
+                        </th>
+
+                      </tr>
+
+                    </thead>
+
+
+
+                    <tbody id="transactionsBody">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                            Cargando transacciones...
+                            </td>
+                        </tr>
+                        </tbody>
+
+
+                  </table>
+
+
+
+                  <div
+                    id="noResultsMsg"
+                    class="text-center py-4 text-muted d-none"
+                  >
+
+                    <i
+                      class="bi bi-search fs-4 d-block mb-1"
+                    ></i>
+
+                    <span>
+                      No se encontraron transacciones que coincidan con el filtro.
+                    </span>
+
+                  </div>
+
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            <!-- =================================
+                 SUSCRIPCIONES
+            ================================== -->
+
+            <div
+              class="tab-pane fade"
+              id="tab-subs"
+              role="tabpanel"
+            >
+
+
+              <div class="card-custom">
+
+
+                <div class="mb-3">
+
+                  <h2
+                    class="h6 fw-bold mb-0"
+                  >
+                    Cuentas y Suscripciones Activas
+                  </h2>
+
+                  <div
+                    class="text-muted"
+                    style="font-size:11.5px"
+                  >
+                    Gestión del ciclo de vida de facturación
+                  </div>
+
+                </div>
+
+
+
+                <div class="table-responsive">
+
+                  <table
+                    class="table table-hover align-middle mb-0"
+                    style="font-size:12.5px;"
+                    id="subsTable"
+                  >
+
+
+                    <thead
+                      class="table-light text-uppercase text-muted"
+                    >
+
+                      <tr>
+
+                        <th>
+                          Cliente
+                        </th>
+
+                        <th>
+                          Plan Actual
+                        </th>
+
+                        <th>
+                          Estado Cuenta
+                        </th>
+
+                        <th>
+                          Próximo Cobro
+                        </th>
+
+                        <th>
+                          Método de Pago
+                        </th>
+
+                        <th>
+                          Acciones
+                        </th>
+
+                      </tr>
+
+                    </thead>
+
+
+
+                   <tbody id="subscriptionsBody">
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                        Cargando suscripciones...
+                        </td>
+                    </tr>
+                    </tbody>
+
+                  </table>
+
+                </div>
+
+
+              </div>
+
+            </div>
+
+
+          </div>
+
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =========================================
+     MODAL DETALLE TRANSACCIÓN
+========================================= -->
+
+<div
+  class="modal fade"
+  id="modal-detalle"
+  tabindex="-1"
+  aria-hidden="true">
+
+  <div class="modal-dialog modal-dialog-centered">
+
+    <div class="modal-content border-0 shadow">
+
+
+      <div class="modal-header border-bottom-0 pb-0">
+
+        <h5 class="modal-title fs-6 fw-bold">
+          Detalle de Transacción #TRX-9982
+        </h5>
+
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Cerrar">
+        </button>
+      </div>
+
+
+
+      <div class="modal-body py-3">
+
+
+        <div class="row g-2">
+
+
+          <div
+            class="col-4 text-muted fw-semibold"
+          >
+            Cliente:
+          </div>
+
+          <div
+            class="col-8 fw-semibold"
+          >
+            Familia Pérez Muñoz
+          </div>
+
+
+
+          <div
+            class="col-4 text-muted fw-semibold"
+          >
+            Fecha y Hora:
+          </div>
+
+          <div class="col-8">
+            28 Ago 2026, 14:30 hrs
+          </div>
+
+
+
+          <div
+            class="col-4 text-muted fw-semibold"
+          >
+            Concepto:
+          </div>
+
+          <div class="col-8">
+            Renovación Plan Platino (Mensual)
+          </div>
+
+
+
+          <div
+            class="col-4 text-muted fw-semibold"
+          >
+            Método Pago:
+          </div>
+
+          <div class="col-8">
+            Tarjeta Visa **** 1234
+          </div>
+
+
+
+          <div
+            class="col-4 text-muted fw-semibold"
+          >
+            ID Pasarela:
+          </div>
+
+          <div class="col-8">
+
+            <code class="text-dark">
+              ch_1N2M3L4K5J6H7G8F
+            </code>
+
+          </div>
+
+
+        </div>
+
+
+
+        <hr class="my-3">
+
+
+
+        <div
+          class="d-flex justify-content-between align-items-center"
+        >
+
+          <span class="fw-semibold">
+            Total Pagado:
+          </span>
+
+          <span
+            class="fs-5 text-success fw-bold"
+          >
+            $10.000 CLP
+          </span>
+
+        </div>
+
+
+      </div>
+
+
+
+      <div
+        class="modal-footer border-top-0 pt-0"
+      >
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          data-bs-dismiss="modal"
+        >
+          Cerrar
+        </button>
+
+
+        <button
+          type="button"
+          class="btn btn-outline-danger btn-sm"
+          onclick="showToastNotification('Solicitud de reembolso registrada')"
+        >
+          Aplicar Reembolso
+        </button>
+
+
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          onclick="showToastNotification('Preparando descarga de boleta')"
+        >
+          Descargar Boleta
+        </button>
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =========================================
+     MODAL MODIFICAR PLAN
+========================================= -->
+
+<div
+  class="modal fade"
+  id="modal-upgrade"
+  tabindex="-1"
+  aria-hidden="true"
+>
+
+  <div
+    class="modal-dialog modal-dialog-centered"
+  >
+
+    <div
+      class="modal-content border-0 shadow"
+    >
+
+
+      <div
+        class="modal-header border-bottom-0 pb-0"
+      >
+
+        <h5
+          class="modal-title fs-6 fw-bold"
+        >
+          Modificar Suscripción
+        </h5>
+
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Cerrar"
+        ></button>
+
+      </div>
+
+
+
+      <div class="modal-body py-3">
+
+
+        <div class="mb-3">
+
+          <label
+            class="form-label fw-semibold text-muted small"
+          >
+            Cliente Seleccionado
+          </label>
+
+
+          <input
+            type="text"
+            id="modalClientName"
+            class="form-control form-control-sm bg-light"
+            value="Cliente / Familia"
+            disabled
+          >
+
+        </div>
+
+
+
+        <div class="mb-3">
+
+          <label
+            class="form-label fw-semibold text-muted small"
+          >
+            Seleccionar Nuevo Plan
+          </label>
+
+
+          <select
+            id="modalPlanSelect"
+            class="form-select form-select-sm"
+          >
+
+            <option value="Gratuito">
+              Gratuito ($0)
+            </option>
+
+            <option value="Dorado">
+              Dorado ($1.000 CLP / mes)
+            </option>
+
+            <option value="Platino">
+              Platino ($10.000 CLP / mes)
+            </option>
+
+            <option value="Proveedor">
+              Proveedor ($5.000 CLP / mes)
+            </option>
+
+          </select>
+
+        </div>
+
+
+
+        <p class="text-muted small mb-0">
+
+          Nota: actualmente este cambio actualiza
+          visualmente la interfaz. En el siguiente paso
+          conectaremos esta acción con PostgreSQL.
+
+        </p>
+
+
+      </div>
+
+
+
+      <div
+        class="modal-footer border-top-0 pt-0"
+      >
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+
+
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          onclick="savePlanChange()"
+        >
+          Guardar Cambios
+        </button>
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =========================================
+     TOAST
+========================================= -->
+
+<div
+  class="toast-container position-fixed bottom-0 end-0 p-3"
+  style="z-index:1090;"
+>
+
+  <div
+    id="toastNotification"
+    class="toast align-items-center text-white bg-dark border-0 shadow"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+
+    <div class="d-flex">
+
+
+      <div
+        class="toast-body d-flex align-items-center gap-2 fw-semibold"
+        id="toastMessage"
+      >
+
+        <i
+          class="bi bi-check-circle-fill text-success fs-6"
+        ></i>
+
+        Operación realizada
+
+      </div>
+
+
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+        aria-label="Cerrar"
+      ></button>
+
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- Bootstrap JS -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+
+
+<script>
+
+  // ============================================
+  // SESIÓN
+  // ============================================
+
+  const token =
+    sessionStorage.getItem('agecare_token');
+
+
+  const sessionLoader =
+    document.getElementById('sessionLoader');
+
+
+  const appRoot =
+    document.getElementById('appRoot');
+
+
+
+  // ============================================
+  // VALIDAR SESIÓN
+  // ============================================
+
+  async function validateSession() {
+
+    if (!token) {
+
+      redirectToLogin();
+
+      return;
+
+    }
+
+
+    try {
+
+      const response =
+        await fetch('/api/auth/me', {
+
+          method: 'GET',
+
+          headers: {
+
+            'Authorization':
+              `Bearer ${token}`
+
+          }
+
+        });
+
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          'Sesión inválida o expirada'
+        );
+
+      }
+
+
+
+      const data =
+        await response.json();
+
+
+      const user =
+        data.user;
+
+
+
+      sessionStorage.setItem(
+        'agecare_user',
+        JSON.stringify(user)
+      );
+
+
+
+      renderLoggedUser(user);
+
+
+
+sessionLoader.classList.add('d-none');
+
+appRoot.classList.remove('d-none');
+
+await loadBillingDashboard();
+
+
+    } catch (error) {
+
+      console.error(
+        'Error validando sesión:',
+        error
+      );
+
+
+      redirectToLogin();
+
+    }
+
+  }
+
+
+
+  // ============================================
+  // MOSTRAR USUARIO
+  // ============================================
+
+  function renderLoggedUser(user) {
+
+    const fullName =
+      user.full_name || 'Usuario';
+
+
+    const role =
+      user.role_code || 'Sin rol';
+
+
+
+    const initials =
+      fullName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(word =>
+          word.charAt(0).toUpperCase()
+        )
+        .join('');
+
+
+
+    // DESKTOP
+
+    document.getElementById(
+      'userAvatar'
+    ).textContent =
+      initials || 'U';
+
+
+    document.getElementById(
+      'userName'
+    ).textContent =
+      fullName;
+
+
+    document.getElementById(
+      'userRole'
+    ).textContent =
+      formatRole(role);
+
+
+
+    // MOBILE
+
+    document.getElementById(
+      'mobileUserAvatar'
+    ).textContent =
+      initials || 'U';
+
+
+    document.getElementById(
+      'mobileUserName'
+    ).textContent =
+      fullName;
+
+
+    document.getElementById(
+      'mobileUserRole'
+    ).textContent =
+      formatRole(role);
+
+  }
+
+
+
+  // ============================================
+  // FORMATEAR ROL
+  // ============================================
+
+  function formatRole(role) {
+
+    if (!role) {
+      return 'Sin rol';
+    }
+
+
+    return role
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, letter =>
+        letter.toUpperCase()
+      );
+
+  }
+
+
+
+  // ============================================
+  // LOGOUT
+  // ============================================
+
+  function logout() {
+
+    sessionStorage.removeItem(
+      'agecare_token'
+    );
+
+
+    sessionStorage.removeItem(
+      'agecare_user'
+    );
+
+
+    window.location.replace('/');
+
+  }
+
+
+
+  // ============================================
+  // REDIRECCIÓN LOGIN
+  // ============================================
+
+  function redirectToLogin() {
+
+    sessionStorage.removeItem(
+      'agecare_token'
+    );
+
+
+    sessionStorage.removeItem(
+      'agecare_user'
+    );
+
+
+    window.location.replace('/');
+
+  }
+
+
+
+  // ============================================
+  // VISTAS
+  // ============================================
+
+  const viewMeta = {
+
+    comercial: [
+
+      'Suscripciones y MRR',
+
+      'Negocio y Ventas · Métricas de conversión y planes'
+
+    ],
+
+
+    pagos: [
+
+      'Pasarela de Pagos',
+
+      'Negocio y Ventas · Transacciones y Gestión de Cobros'
+
+    ]
+
+  };
+
+
+
+  let currentRowEditing =
+    null;
+
+
+
+  function switchView(viewId) {
+
+    document
+      .querySelectorAll(
+        '.nav-item-btn'
+      )
+      .forEach(button => {
+
+        button.classList.remove(
+          'active'
+        );
+
+      });
+
+
+
+    document
+      .querySelectorAll(
+        `.nav-btn-${viewId}`
+      )
+      .forEach(button => {
+
+        button.classList.add(
+          'active'
+        );
+
+      });
+
+
+
+    document
+      .querySelectorAll('.view')
+      .forEach(section => {
+
+        section.classList.remove(
+          'active'
+        );
+
+      });
+
+
+
+    const selectedView =
+      document.getElementById(
+        'view-' + viewId
+      );
+
+
+    if (selectedView) {
+
+      selectedView.classList.add(
+        'active'
+      );
+
+    }
+
+
+
+    const metadata =
+      viewMeta[viewId];
+
+
+    if (metadata) {
+
+      document.getElementById(
+        'tb-title'
+      ).textContent =
+        metadata[0];
+
+
+      document.getElementById(
+        'tb-crumb'
+      ).textContent =
+        metadata[1];
+
+    }
+
+  }
+
+
+
+  // ============================================
+  // FILTRAR TRANSACCIONES
+  // ============================================
+
+  function filterTransactions() {
+
+    const textFilter =
+      document
+        .getElementById('searchTrx')
+        .value
+        .toLowerCase()
+        .trim();
+
+
+
+    const statusFilter =
+      document
+        .getElementById(
+          'selectStatus'
+        )
+        .value;
+
+
+
+    const rows =
+      document.querySelectorAll(
+        '#trxTable tbody tr'
+      );
+
+
+
+    let visibleCount =
+      0;
+
+
+
+    rows.forEach(row => {
+
+      const rowText =
+        row.innerText
+          .toLowerCase();
+
+
+      const rowStatus =
+        row.getAttribute(
+          'data-status'
+        );
+
+
+
+      const matchesText =
+
+        textFilter === '' ||
+
+        rowText.includes(
+          textFilter
+        );
+
+
+
+      const matchesStatus =
+
+        statusFilter === 'Todos' ||
+
+        rowStatus ===
+          statusFilter;
+
+
+
+      if (
+        matchesText &&
+        matchesStatus
+      ) {
+
+        row.classList.remove(
+          'd-none'
+        );
+
+
+        visibleCount++;
+
+      } else {
+
+        row.classList.add(
+          'd-none'
+        );
+
+      }
+
+    });
+
+
+
+    const noResultsMsg =
+      document.getElementById(
+        'noResultsMsg'
+      );
+
+
+
+    if (visibleCount === 0) {
+
+      noResultsMsg.classList.remove(
+        'd-none'
+      );
+
+    } else {
+
+      noResultsMsg.classList.add(
+        'd-none'
+      );
+
+    }
+
+  }
+
+
+
+  // ============================================
+  // EXPORTAR CSV
+  // ============================================
+
+  function exportTableToCSV(
+    filename = 'transacciones.csv'
+  ) {
+
+    const table =
+      document.getElementById(
+        'trxTable'
+      );
+
+
+    const rows =
+      table.querySelectorAll(
+        'tr'
+      );
+
+
+    const csv =
+      [];
+
+
+
+    rows.forEach(row => {
+
+      if (
+        row.classList.contains(
+          'd-none'
+        )
+      ) {
+
+        return;
+
+      }
+
+
+
+      const cols =
+        row.querySelectorAll(
+          'th, td'
+        );
+
+
+      const rowData =
+        [];
+
+
+
+      cols.forEach(
+        (col, index) => {
+
+          // Ignorar columna acciones
+
+          if (
+            index ===
+            cols.length - 1
+          ) {
+
+            return;
+
+          }
+
+
+
+          let text =
+            col.innerText
+              .replace(
+                /(\r\n|\n|\r)/gm,
+                ' '
+              )
+              .replace(
+                /\s+/g,
+                ' '
+              )
+              .trim();
+
+
+
+          text =
+            text.replace(
+              /"/g,
+              '""'
+            );
+
+
+
+          rowData.push(
+            `"${text}"`
+          );
+
+        }
+      );
+
+
+
+      if (
+        rowData.length > 0
+      ) {
+
+        csv.push(
+          rowData.join(';')
+        );
+
+      }
+
+    });
+
+
+
+    if (
+      csv.length === 0
+    ) {
+
+      showToastNotification(
+        'No hay datos visibles para exportar'
+      );
+
+
+      return;
+
+    }
+
+
+
+    const csvContent =
+      '\uFEFF' +
+      csv.join('\n');
+
+
+
+    const blob =
+      new Blob(
+        [csvContent],
+        {
+          type:
+            'text/csv;charset=utf-8;'
+        }
+      );
+
+
+
+    const link =
+      document.createElement(
+        'a'
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+
+    link.setAttribute(
+      'href',
+      url
+    );
+
+
+    link.setAttribute(
+      'download',
+      filename
+    );
+
+
+    link.style.visibility =
+      'hidden';
+
+
+
+    document.body.appendChild(
+      link
+    );
+
+
+    link.click();
+
+
+    document.body.removeChild(
+      link
+    );
+
+
+    URL.revokeObjectURL(
+      url
+    );
+
+  }
+
+
+
+  // ============================================
+  // PREPARAR MODAL PLAN
+  // ============================================
+
+  function prepareUpgradeModal(
+    button
+  ) {
+
+    const row =
+      button.closest('tr');
+
+
+    currentRowEditing =
+      row;
+
+
+
+    const clientName =
+      row.children[0]
+        .innerText
+        .trim();
+
+
+
+    const currentPlanText =
+      row.children[1]
+        .innerText
+        .trim();
+
+
+
+    document.getElementById(
+      'modalClientName'
+    ).value =
+      clientName;
+
+
+
+    const select =
+      document.getElementById(
+        'modalPlanSelect'
+      );
+
+
+
+    for (
+      const option
+      of select.options
+    ) {
+
+      if (
+        option.value
+          .toLowerCase() ===
+        currentPlanText
+          .toLowerCase()
+      ) {
+
+        option.selected =
+          true;
+
+
+        break;
+
+      }
+
+    }
+
+  }
+
+
+
+  // ============================================
+  // GUARDAR CAMBIO PLAN
+  // ============================================
+
+  function savePlanChange() {
+
+    if (
+      !currentRowEditing
+    ) {
+
+      return;
+
+    }
+
+
+
+    const select =
+      document.getElementById(
+        'modalPlanSelect'
+      );
+
+
+    const selectedPlan =
+      select.value;
+
+
+
+    let newChipHTML =
+      '';
+
+
+
+    switch (
+      selectedPlan
+    ) {
+
+
+      case 'Gratuito':
+
+        newChipHTML =
+          '<span class="chip neutral">Gratuito</span>';
+
+        break;
+
+
+
+      case 'Dorado':
+
+        newChipHTML =
+          '<span class="chip warn" style="background:#eef1f6; color:var(--s4)">Dorado</span>';
+
+        break;
+
+
+
+      case 'Platino':
+
+        newChipHTML =
+          '<span class="chip ok" style="background:#eef1f6; color:var(--s1)">Platino</span>';
+
+        break;
+
+
+
+      case 'Proveedor':
+
+        newChipHTML =
+          '<span class="chip neutral">Proveedor</span>';
+
+        break;
+
+
+
+      default:
+
+        newChipHTML =
+          `<span class="chip neutral">${selectedPlan}</span>`;
+
+    }
+
+
+
+    currentRowEditing
+      .children[1]
+      .innerHTML =
+        newChipHTML;
+
+
+
+    const modalEl =
+      document.getElementById(
+        'modal-upgrade'
+      );
+
+
+    const modalInstance =
+      bootstrap.Modal.getInstance(
+        modalEl
+      );
+
+
+
+    if (
+      modalInstance
+    ) {
+
+      modalInstance.hide();
+
+    }
+
+
+
+    showToastNotification(
+      'Plan actualizado visualmente'
+    );
+
+  }
+
+
+
+  // ============================================
+  // REINTENTO PAGO
+  // ============================================
+
+  function retryPayment() {
+
+    showToastNotification(
+      'Solicitud de reintento iniciada'
+    );
+
+  }
+
+
+
+  // ============================================
+  // TOAST
+  // ============================================
+
+  function showToastNotification(
+    message
+  ) {
+
+    const toastEl =
+      document.getElementById(
+        'toastNotification'
+      );
+
+
+    const toastBody =
+      document.getElementById(
+        'toastMessage'
+      );
+    toastBody.innerHTML =
+      `
+        <i
+          class="bi bi-check-circle-fill text-success fs-6"
+        ></i>
+
+        ${message}
+      `;
+    const toast =
+      bootstrap.Toast.getOrCreateInstance(
+        toastEl,
+        {
+          delay: 3000
+        }
+      );
+    toast.show();
+
+  }
+
+// ============================================
+// FETCH AUTENTICADO
+// ============================================
+
+async function authenticatedFetch(url) {
+
+  const currentToken =
+    sessionStorage.getItem('agecare_token');
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${currentToken}`
+    }
+  });
+
+  if (response.status === 401) {
+    redirectToLogin();
+    throw new Error('Sesión expirada');
+  }
+
+  return response;
+}
+
+
+// ============================================
+// UTILIDADES
+// ============================================
+
+function escapeHtml(value) {
+
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+
+function formatCurrency(amount, currency = 'CLP') {
+
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: currency,
+    maximumFractionDigits: 0
+  }).format(Number(amount || 0));
+}
+
+
+function formatDate(value) {
+
+  if (!value) {
+    return 'N/A';
+  }
+
+  return new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(new Date(value));
+}
+
+
+function formatAccountType(type) {
+
+  const types = {
+    family: 'Familia',
+    agency: 'Agencia',
+    caregiver: 'Cuidador'
+  };
+
+  return types[type] || type;
+}
+
+
+// ============================================
+// MÉTRICAS
+// ============================================
+
+async function loadMetrics() {
+
+  try {
+
+    const response =
+      await authenticatedFetch('/api/billing/metrics');
+
+    if (!response.ok) {
+      throw new Error('Error cargando métricas');
+    }
+
+    const data = await response.json();
+    const metrics = data.metrics;
+
+    document.getElementById(
+      'kpiApprovedToday'
+    ).textContent = metrics.approved_today;
+
+    document.getElementById(
+      'kpiApprovedAmount'
+    ).textContent = formatCurrency(
+      metrics.approved_amount_today
+    );
+
+    document.getElementById(
+      'kpiFailedTransactions'
+    ).textContent = metrics.failed_transactions;
+
+    document.getElementById(
+      'kpiSuccessRate'
+    ).textContent = `${metrics.success_rate}%`;
+
+  } catch (error) {
+
+    console.error(
+      'Error cargando métricas:',
+      error
+    );
+
+  }
+}
+
+
+// ============================================
+// TRANSACCIONES
+// ============================================
+
+async function loadTransactions() {
+
+  const tbody =
+    document.getElementById('transactionsBody');
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        '/api/billing/transactions'
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        'Error cargando transacciones'
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const transactions =
+      data.transactions;
+
+
+    if (!transactions.length) {
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6"
+              class="text-center text-muted py-4">
+            No hay transacciones registradas.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+
+    tbody.innerHTML =
+      transactions.map(transaction => {
+
+        let statusLabel = '';
+        let statusClass = 'neutral';
+        let icon = '●';
+
+        switch (transaction.status) {
+
+          case 'approved':
+            statusLabel = 'Aprobado';
+            statusClass = 'ok';
+            icon = '✔';
+            break;
+
+          case 'failed':
+            statusLabel = 'Fallido';
+            statusClass = 'crit';
+            icon = '✖';
+            break;
+
+          case 'refunded':
+            statusLabel = 'Reembolsado';
+            statusClass = 'warn';
+            icon = '↩';
+            break;
+
+          case 'partially_refunded':
+            statusLabel = 'Reembolso parcial';
+            statusClass = 'warn';
+            icon = '↩';
+            break;
+
+          case 'pending':
+            statusLabel = 'Pendiente';
+            break;
+
+          case 'canceled':
+            statusLabel = 'Cancelado';
+            statusClass = 'crit';
+            icon = '✖';
+            break;
+
+          default:
+            statusLabel = transaction.status;
+        }
+
+
+        const shortId =
+          transaction.id
+            .substring(0, 8)
+            .toUpperCase();
+
+
+        return `
+          <tr data-status="${statusLabel}">
+
+            <td>
+              <span class="font-monospace text-muted">
+                #${shortId}
+              </span>
+            </td>
+
+            <td>
+              <div class="fw-semibold">
+                ${escapeHtml(transaction.display_name)}
+              </div>
+
+              <div class="text-muted"
+                   style="font-size:10.5px;">
+                ${escapeHtml(
+                  formatAccountType(
+                    transaction.account_type
+                  )
+                )}
+              </div>
+            </td>
+
+            <td>
+              <span class="chip neutral">
+                ${escapeHtml(
+                  transaction.plan_name || 'Sin plan'
+                )}
+              </span>
+            </td>
+
+            <td class="text-end fw-semibold">
+              ${formatCurrency(
+                transaction.amount,
+                transaction.currency_code
+              )}
+            </td>
+
+            <td>
+              <span class="chip ${statusClass}">
+                ${icon}
+                ${escapeHtml(statusLabel)}
+              </span>
+            </td>
+
+            <td>
+              <button
+                class="action-btn"
+                type="button"
+                onclick="showToastNotification(
+                  'Transacción ${shortId}'
+                )"
+              >
+                Ver detalle
+              </button>
+            </td>
+
+          </tr>
+        `;
+
+      }).join('');
+
+
+  } catch (error) {
+
+    console.error(
+      'Error cargando transacciones:',
+      error
+    );
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6"
+            class="text-center text-danger py-4">
+          No fue posible cargar las transacciones.
+        </td>
+      </tr>
+    `;
+
+  }
+}
+
+
+// ============================================
+// SUSCRIPCIONES
+// ============================================
+
+async function loadSubscriptions() {
+
+  const tbody =
+    document.getElementById('subscriptionsBody');
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        '/api/billing/subscriptions'
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        'Error cargando suscripciones'
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const subscriptions =
+      data.subscriptions;
+
+
+    if (!subscriptions.length) {
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6"
+              class="text-center text-muted py-4">
+            No hay suscripciones registradas.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+
+    tbody.innerHTML =
+      subscriptions.map(subscription => {
+
+        let statusLabel = '';
+        let statusClass = 'neutral';
+
+        switch (subscription.status) {
+
+          case 'active':
+            statusLabel = 'Activa';
+            statusClass = 'ok';
+            break;
+
+          case 'past_due':
+            statusLabel = 'Morosa';
+            statusClass = 'crit';
+            break;
+
+          case 'trialing':
+            statusLabel = 'Periodo de prueba';
+            break;
+
+          case 'pending':
+            statusLabel = 'Pendiente';
+            break;
+
+          case 'paused':
+            statusLabel = 'Pausada';
+            statusClass = 'warn';
+            break;
+
+          case 'canceled':
+            statusLabel = 'Cancelada';
+            statusClass = 'crit';
+            break;
+
+          default:
+            statusLabel = subscription.status;
+        }
+
+
+        let paymentMethod =
+          'No registrado';
+
+        if (
+          subscription.brand &&
+          subscription.last4
+        ) {
+
+          paymentMethod =
+            `${escapeHtml(subscription.brand)}
+             •••• ${escapeHtml(subscription.last4)}`;
+        }
+
+
+        let nextCharge =
+          formatDate(
+            subscription.current_period_end
+          );
+
+        if (
+          subscription.status === 'canceled'
+        ) {
+          nextCharge = 'Cancelada';
+        }
+
+
+        return `
+          <tr>
+
+            <td>
+
+              <div class="fw-semibold">
+                ${escapeHtml(
+                  subscription.display_name
+                )}
+              </div>
+
+              <div
+                class="text-muted"
+                style="font-size:10.5px;"
+              >
+                ${escapeHtml(
+                  formatAccountType(
+                    subscription.account_type
+                  )
+                )}
+              </div>
+
+            </td>
+
+
+            <td>
+
+              <span class="chip neutral">
+                ${escapeHtml(
+                  subscription.plan_name
+                )}
+              </span>
+
+            </td>
+
+
+            <td>
+
+              <span
+                class="chip ${statusClass}"
+              >
+                ${escapeHtml(statusLabel)}
+              </span>
+
+            </td>
+
+
+            <td>
+              ${nextCharge}
+            </td>
+
+
+            <td>
+              ${paymentMethod}
+            </td>
+
+
+            <td>
+
+              <button
+                class="action-btn"
+                type="button"
+                onclick="showToastNotification(
+                  'La modificación de planes será el siguiente módulo'
+                )"
+              >
+                Modificar Plan
+              </button>
+
+            </td>
+
+          </tr>
+        `;
+
+      }).join('');
+
+
+  } catch (error) {
+
+    console.error(
+      'Error cargando suscripciones:',
+      error
+    );
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6"
+            class="text-center text-danger py-4">
+          No fue posible cargar las suscripciones.
+        </td>
+      </tr>
+    `;
+
+  }
+}
+
+
+// ============================================
+// CARGAR INFORMACIÓN COMERCIAL
+// ============================================
+
+async function loadBillingDashboard() {
+
+  await Promise.all([
+    loadMetrics(),
+    loadTransactions(),
+    loadSubscriptions()
+  ]);
+
+}
+
+
+
+  // ============================================
+  // INICIAR
+  // ============================================
+
+  validateSession();
+
+</script>
+</body>
+</html>
