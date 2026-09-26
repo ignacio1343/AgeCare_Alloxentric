@@ -1,0 +1,393 @@
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+
+      --ink: #1f2733;
+      --ink-soft: #5b6573;
+      --ink-faint: #8b95a3;
+
+      --line: #e4e8ee;
+      --line-strong: #cfd6df;
+
+      --brand: #3b6fd4;
+      --brand-ink: #2b55a8;
+      --brand-soft: #e7eefb;
+
+      --sidebar: #141b26;
+      --sidebar-ink: #aeb8c6;
+      --sidebar-active: #1f2b3d;
+
+      --s1: #2a78d6;
+      --s2: #eb6834;
+      --s3: #1baf7a;
+      --s4: #eda100;
+
+      --ok: #0ca30c;
+      --ok-bg: #e9f6e9;
+
+      --warn: #b97800;
+      --warn-bg: #fdf3dc;
+
+      --crit: #d03b3b;
+      --crit-bg: #fbe7e7;
+
+      --radius: 14px;
+
+      --shadow:
+        0 1px 2px rgba(31,39,51,.05),
+        0 8px 24px rgba(31,39,51,.06);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    body {
+      margin: 0;
+      font-family:
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+
+      background: var(--bg);
+      color: var(--ink);
+
+      font-size: 14px;
+    }
+
+
+    /* =========================================
+       LOADING INICIAL
+    ========================================= */
+
+    #sessionLoader {
+      min-height: 100vh;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: var(--bg);
+    }
+
+
+    /* =========================================
+       SIDEBAR
+    ========================================= */
+
+    .sidebar-wrapper {
+      width: 240px;
+      background: var(--sidebar);
+      color: var(--sidebar-ink);
+      flex-shrink: 0;
+      min-height: 100vh;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+    }
+
+
+    .offcanvas.sidebar-mobile {
+      background: var(--sidebar);
+      color: var(--sidebar-ink);
+      width: 270px;
+    }
+
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+
+    .nav-group {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #6b7686;
+      padding: 16px 10px 6px;
+    }
+
+
+    .nav-item-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--sidebar-ink);
+      margin-bottom: 2px;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+
+    .nav-item-btn:hover {
+      background: rgba(255,255,255,.05);
+      color: #e8edf4;
+    }
+
+
+    .nav-item-btn.active {
+      background: var(--sidebar-active);
+      color: #fff;
+      font-weight: 600;
+      box-shadow:
+        inset 3px 0 0 var(--brand);
+    }
+
+
+    .logout-btn {
+      color: #ef8686;
+    }
+
+
+    .logout-btn:hover {
+      background: rgba(208,59,59,.12);
+      color: #ffabab;
+    }
+
+
+    /* =========================================
+       USUARIO
+    ========================================= */
+
+    .sf-avatar {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border-radius: 50%;
+      background: #31507f;
+      color: #cfe0fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    .user-name {
+      font-size: 12.5px;
+      max-width: 150px;
+    }
+
+    .user-role {
+      font-size: 10.5px;
+      text-transform: capitalize;
+    }
+
+    /* =========================================
+      TOPBAR
+    ========================================= */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+      background: rgba(244,246,249,.92);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .env-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0ca30c;
+      background: #e9f6e9;
+      border: 1px solid #cfe9cf;
+      border-radius: 8px;
+      padding: 5px 10px;
+    }
+
+    /* =========================================
+      TARJETAS
+    ========================================= */
+
+    .card-custom {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      height: 100%;
+    }
+
+
+    .kpi-label {
+      font-size: 11.5px;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 650;
+      letter-spacing: -.02em;
+      margin-top: 6px;
+      line-height: 1;
+    }
+
+
+    .kpi-delta {
+      font-size: 11.5px;
+      margin-top: 7px;
+      font-weight: 600;
+      color: var(--ink-faint);
+    }
+
+
+    .kpi-delta.up {
+      color: #006300;
+    }
+
+
+    .kpi-delta.down {
+      color: var(--crit);
+    }
+
+
+    .kpi-note {
+      font-size: 10.5px;
+      color: var(--ink-faint);
+      margin-top: 4px;
+    }
+
+
+    /* =========================================
+      CHIPS
+    ========================================= */
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+
+    .chip.ok {
+      color: #0a7a0a;
+      background: var(--ok-bg);
+    }
+
+    .chip.warn {
+      color: var(--warn);
+      background: var(--warn-bg);
+    }
+
+    .chip.crit {
+      color: var(--crit);
+      background: var(--crit-bg);
+    }
+
+    .chip.neutral {
+      color: var(--ink-soft);
+      background: #eef1f6;
+    }
+
+    /* =========================================
+      BOTONES
+    ========================================= */
+    .action-btn {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--brand);
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .action-btn:hover {
+      background: var(--brand-soft);
+    }
+
+
+    /* =========================================
+      VISTAS
+    ========================================= */
+
+    .view {
+      display: none;
+    }
+
+
+    .view.active {
+      display: block;
+    }
+
+
+    /* =========================================
+      MAIN
+    ========================================= */
+
+    .main-content {
+      min-width: 0;
+    }
+
+    .content-container {
+      max-width: 1500px;
+    }
+
+    /* =========================================
+      TABLAS
+    ========================================= */
+
+    .table > :not(caption) > * > * {
+      padding-top: .75rem;
+      padding-bottom: .75rem;
+    }
+
+    /* =========================================
+      RESPONSIVE
+    ========================================= */
+
+    @media (max-width: 767.98px) {
+
+      .kpi-value {
+        font-size: 21px;
+      }
+
+      .card-custom {
+        padding: 14px;
+      }
+
+      .topbar {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+    }
