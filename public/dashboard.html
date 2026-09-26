@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgeCare · Administración</title>
+  <link rel="icon" type="image/jpeg" href="/img/logoAgecare.jpg">
+
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -36,7 +38,6 @@
     </div>
   </div>
 </div>
-
 
 
 <!-- =========================================
@@ -83,6 +84,13 @@
           <i class="bi bi-credit-card fs-6"></i>
           Pasarela de Pagos
         </button>
+
+        <div class="nav-group">Administración</div>
+
+        <button class="nav-item-btn nav-btn-auditoria" onclick="switchView('auditoria')" type="button">
+          <i class="bi bi-shield-check fs-6"></i>
+          Auditoría
+        </button>
       </nav>
 
       <!-- USUARIO DESKTOP -->
@@ -108,7 +116,6 @@
         </button>
       </div>
     </aside>
-
 
 
     <!-- =====================================
@@ -149,6 +156,14 @@
           <i class="bi bi-credit-card"></i>
           Pasarela de Pagos
         </button>
+
+        <div class="nav-group">Administración</div>
+
+        <button class="nav-item-btn nav-btn-auditoria" data-bs-dismiss="offcanvas" onclick="switchView('auditoria')" type="button">
+          <i class="bi bi-shield-check"></i>
+          Auditoría
+        </button>
+
         <hr class="border-secondary my-3">
 
         <!-- USUARIO MOBILE -->
@@ -181,9 +196,9 @@
 
       <!-- TOPBAR -->
       <header class="topbar px-3 px-lg-4 py-3 d-flex align-items-center gap-3">
-        <buttonn class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
           <i class="bi bi-list fs-5"></i>
-        </buttonn>
+        </button>
 
         <div>
           <h1 class="h6 fw-bold mb-0" id="tb-title">
@@ -265,7 +280,6 @@
 
           </div>
         </section>
-
 
 
         <!-- =================================
@@ -469,7 +483,6 @@
                     </thead>
 
 
-
                   <tbody id="subscriptionsBody">
                     <tr>
                         <td colspan="6" class="text-center text-muted py-4">
@@ -480,6 +493,84 @@
                   </table>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- =================================
+            VISTA AUDITORÍA
+        ================================== -->
+        <section class="view" id="view-auditoria">
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+              <div class="kpi-card">
+                <div class="kpi-label">Acciones registradas</div>
+                <div class="kpi-value" id="auditTotalActions">0</div>
+                <div class="kpi-note">Movimientos administrativos</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="kpi-card">
+                <div class="kpi-label">Cambios de plan</div>
+                <div class="kpi-value" id="auditPlanChanges">0</div>
+                <div class="kpi-note">Cambios registrados sobre suscripciones</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="kpi-card">
+                <div class="kpi-label">Reembolsos y cancelaciones</div>
+                <div class="kpi-value" id="auditCriticalActions">0</div>
+                <div class="kpi-note">Operaciones sensibles</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-custom">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <div>
+                <h2 class="h6 fw-bold mb-0">Registro de Auditoría</h2>
+                <div class="text-muted" style="font-size:11.5px">Historial de acciones realizadas por administradores</div>
+              </div>
+              <button class="btn btn-outline-secondary btn-sm" type="button" onclick="loadAuditLog()">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Actualizar
+              </button>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-md-6 col-lg-4">
+                <input type="text" class="form-control form-control-sm" id="auditSearch" placeholder="Buscar por administrador, cliente o acción..." onkeyup="filterAuditLog()">
+              </div>
+              <div class="col-12 col-md-4 col-lg-3">
+                <select class="form-select form-select-sm" id="auditActionFilter" onchange="filterAuditLog()">
+                  <option value="Todos">Todas las acciones</option>
+                  <option value="subscription_plan_changed">Cambio de plan</option>
+                  <option value="payment_refunded">Reembolso</option>
+                  <option value="subscription_canceled">Cancelación</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0" style="font-size:12.5px;" id="auditTable">
+                <thead class="table-light text-uppercase text-muted">
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Administrador</th>
+                    <th>Cliente</th>
+                    <th>Acción</th>
+                    <th>Antes</th>
+                    <th>Después</th>
+                  </tr>
+                </thead>
+                <tbody id="auditBody">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Cargando auditoría...</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id="auditNoResults" class="text-center py-4 text-muted d-none">No se encontraron registros.</div>
             </div>
           </div>
         </section>
@@ -674,10 +765,7 @@
             Plan cobrado:
           </div>
 
-          <div
-            class="col-8"
-            id="refundPlan"
-          >
+          <div class="col-8"id="refundPlan">
             --
           </div>
 
@@ -691,33 +779,21 @@
           >
             --
           </div>
-
         </div>
-
       </div>
 
       <div class="modal-footer border-top-0">
 
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="modal"
-        >
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
           Cancelar
         </button>
 
-        <button
-          type="button"
-          class="btn btn-danger btn-sm"
-          id="confirmRefundButton"
-          onclick="requestTransactionRefund()"
-        >
+        <button type="button" class="btn btn-danger btn-sm" id="confirmRefundButton" onclick="requestTransactionRefund()">
           <i class="bi bi-arrow-counterclockwise me-1"></i>
           Confirmar Reembolso
         </button>
 
       </div>
-
     </div>
   </div>
 </div>
@@ -726,7 +802,6 @@
 ========================================= -->
 
 <div class="modal fade" id="modal-upgrade" tabindex="-1" aria-hidden="true">
-
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header border-bottom-0 pb-0">

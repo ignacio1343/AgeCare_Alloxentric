@@ -5,6 +5,7 @@ let selectedCancelSubscriptionId = null;
 let currentSubscriptions = [];
 let currentTransactions = [];
 let selectedTransactionId = null;
+let currentAuditEntries = [];
   
   // ============================================
   // SESIÓN
@@ -177,18 +178,22 @@ await loadBillingDashboard();
   // VISTAS
   // ============================================
 
-  const viewMeta = {
-    comercial: [
-      'Suscripciones y MRR',
-      'Negocio y Ventas · Métricas de conversión y planes'
-    ],
+const viewMeta = {
+  comercial: [
+    'Suscripciones y MRR',
+    'Negocio y Ventas · Métricas de conversión y planes'
+  ],
 
+  pagos: [
+    'Pasarela de Pagos',
+    'Negocio y Ventas · Transacciones y Gestión de Cobros'
+  ],
 
-    pagos: [
-      'Pasarela de Pagos',
-      'Negocio y Ventas · Transacciones y Gestión de Cobros'
-    ]
-  };
+  auditoria: [
+    'Auditoría Administrativa',
+    'Administración · Trazabilidad de acciones'
+  ]
+};
 
 
 
@@ -1570,7 +1575,8 @@ async function loadBillingDashboard() {
     loadMetrics(),
     loadTransactions(),
     loadSubscriptions(),
-    loadCommercialMetrics()
+    loadCommercialMetrics(),
+    loadAuditLog()
   ]);
 }
 
@@ -1619,6 +1625,339 @@ async function loadCommercialMetrics() {
     );
   }
 }
+
+function auditActionLabel(action) {
+  const labels = {
+    subscription_plan_changed: 'Cambio de plan',
+    payment_refunded: 'Reembolso',
+    subscription_canceled: 'Cancelación de suscripción'
+  };
+
+  return labels[action] || action;
+}
+
+function auditActionClass(action) {
+  const classes = {
+    subscription_plan_changed: 'neutral',
+    payment_refunded: 'warn',
+    subscription_canceled: 'crit'
+  };
+
+  return classes[action] || 'neutral';
+}
+
+function formatAuditValue(value) {
+  if (!value) {
+    return '—';
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  const entries =
+    Object.entries(value);
+
+  if (!entries.length) {
+    return '—';
+  }
+
+  return entries
+    .map(([key, val]) => {
+      const labels = {
+        plan_code: 'Plan',
+        status: 'Estado',
+        refunded_amount: 'Reembolsado',
+        cancel_at_period_end: 'Cancelar al fin',
+        canceled_at: 'Cancelado'
+      };
+
+      const label =
+        labels[key] || key;
+
+      let displayValue = val;
+
+      if (
+        key === 'refunded_amount' &&
+        val !== null
+      ) {
+        displayValue =
+          formatCurrency(val, 'CLP');
+      }
+
+      if (
+        key === 'canceled_at' &&
+        val
+      ) {
+        displayValue =
+          formatDateTime(val);
+      }
+
+      if (
+        key === 'cancel_at_period_end'
+      ) {
+        displayValue =
+          val ? 'Sí' : 'No';
+      }
+
+      return `${label}: ${displayValue ?? '—'}`;
+    })
+    .join(' · ');
+}
+
+async function loadAuditLog() {
+  const tbody =
+    document.getElementById('auditBody');
+
+  try {
+    const response =
+      await authenticatedFetch(
+        '/api/admin/audit?limit=100'
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        'No fue posible cargar la auditoría'
+      );
+    }
+
+    const data =
+      await response.json();
+
+    currentAuditEntries =
+      data.audit || [];
+
+    renderAuditLog(
+      currentAuditEntries
+    );
+
+    updateAuditMetrics(
+      currentAuditEntries
+    );
+
+  } catch (error) {
+    console.error(
+      'Error cargando auditoría:',
+      error
+    );
+
+    tbody.innerHTML = `
+      <tr>
+        <td
+          colspan="6"
+          class="text-center text-danger py-4"
+        >
+          No fue posible cargar la auditoría.
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderAuditLog(entries) {
+  const tbody =
+    document.getElementById(
+      'auditBody'
+    );
+
+  if (!entries.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td
+          colspan="6"
+          class="text-center text-muted py-4"
+        >
+          No hay registros de auditoría.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML =
+    entries.map(entry => {
+
+      const actionLabel =
+        auditActionLabel(
+          entry.action
+        );
+
+      const actionClass =
+        auditActionClass(
+          entry.action
+        );
+
+      return `
+        <tr
+          data-action="${escapeHtml(entry.action)}"
+        >
+
+          <td>
+            ${formatDateTime(entry.created_at)}
+          </td>
+
+          <td>
+            <div class="fw-semibold">
+              ${escapeHtml(
+                entry.actor_name ||
+                'Sistema'
+              )}
+            </div>
+
+            <div
+              class="text-muted"
+              style="font-size:10.5px;"
+            >
+              ${escapeHtml(
+                formatRole(
+                  entry.actor_role ||
+                  'sin rol'
+                )
+              )}
+            </div>
+          </td>
+
+          <td>
+            ${escapeHtml(
+              entry.subject_name ||
+              'No disponible'
+            )}
+          </td>
+
+          <td>
+            <span
+              class="chip ${actionClass}"
+            >
+              ${escapeHtml(actionLabel)}
+            </span>
+          </td>
+
+          <td>
+            <div
+              class="text-muted"
+              style="max-width:300px;"
+            >
+              ${escapeHtml(
+                formatAuditValue(
+                  entry.before
+                )
+              )}
+            </div>
+          </td>
+
+          <td>
+            <div
+              style="max-width:300px;"
+            >
+              ${escapeHtml(
+                formatAuditValue(
+                  entry.after
+                )
+              )}
+            </div>
+          </td>
+
+        </tr>
+      `;
+
+    }).join('');
+}
+
+function updateAuditMetrics(entries) {
+  document.getElementById(
+    'auditTotalActions'
+  ).textContent =
+    entries.length;
+
+  document.getElementById(
+    'auditPlanChanges'
+  ).textContent =
+    entries.filter(
+      entry =>
+        entry.action ===
+        'subscription_plan_changed'
+    ).length;
+
+  document.getElementById(
+    'auditCriticalActions'
+  ).textContent =
+    entries.filter(
+      entry =>
+        entry.action ===
+          'payment_refunded' ||
+        entry.action ===
+          'subscription_canceled'
+    ).length;
+}
+
+function filterAuditLog() {
+  const search =
+    document
+      .getElementById(
+        'auditSearch'
+      )
+      .value
+      .toLowerCase()
+      .trim();
+
+  const action =
+    document
+      .getElementById(
+        'auditActionFilter'
+      )
+      .value;
+
+  const rows =
+    document.querySelectorAll(
+      '#auditBody tr'
+    );
+
+  let visible = 0;
+
+  rows.forEach(row => {
+    const rowText =
+      row.innerText
+        .toLowerCase();
+
+    const rowAction =
+      row.getAttribute(
+        'data-action'
+      );
+
+    const matchesSearch =
+      search === '' ||
+      rowText.includes(search);
+
+    const matchesAction =
+      action === 'Todos' ||
+      rowAction === action;
+
+    if (
+      matchesSearch &&
+      matchesAction
+    ) {
+      row.classList.remove(
+        'd-none'
+      );
+
+      visible++;
+
+    } else {
+      row.classList.add(
+        'd-none'
+      );
+    }
+  });
+
+  document.getElementById(
+    'auditNoResults'
+  ).classList.toggle(
+    'd-none',
+    visible !== 0
+  );
+}
+
+
 
   // ============================================
   // INICIAR
