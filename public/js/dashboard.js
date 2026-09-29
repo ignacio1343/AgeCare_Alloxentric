@@ -6,6 +6,15 @@ let currentSubscriptions = [];
 let currentTransactions = [];
 let selectedTransactionId = null;
 let currentAuditEntries = [];
+
+let currentUserRole = null;
+function isAdmin() {
+  return currentUserRole === 'admin';
+}
+function isAnalyst() {
+  return currentUserRole === 'analyst';
+}
+
   
   // ============================================
   // SESIÓN
@@ -24,52 +33,61 @@ let currentAuditEntries = [];
   // VALIDAR SESIÓN
   // ============================================
 
-  async function validateSession() {
-    if (!token) {
+async function validateSession() {
+  if (!token) {
+    redirectToLogin();
+    return;
+  }
+
+  try {
+    const response =
+      await fetch('/api/auth/me', {
+        method: 'GET',
+
+        headers: {
+          'Authorization':
+            `Bearer ${token}`
+        }
+      });
+
+    if (!response.ok) {
       redirectToLogin();
       return;
     }
-    try {
-      const response =
-        await fetch('/api/auth/me', {
-          method: 'GET',
-          headers: {
-            'Authorization':
-              `Bearer ${token}`
-          }
-        });
 
+    const data =
+      await response.json();
 
+    // Usuario devuelto por /api/auth/me
+    const user =
+      data.user || data;
 
-      if (!response.ok) {
-        throw new Error(
-          'Sesión inválida o expirada'
-        );
-      }
+    // Guardamos el rol actual
+    currentUserRole =
+      user.role_code;
 
+    // Mostramos datos del usuario
+    renderLoggedUser(user);
 
+    // Aplicamos interfaz según rol
+    applyRoleInterface();
 
-      const data =
-        await response.json();
-      const user =
-        data.user;
+    // Mostramos la aplicación
+    sessionLoader.classList.add('d-none');
+    appRoot.classList.remove('d-none');
 
-      sessionStorage.setItem(
-        'agecare_user',
-        JSON.stringify(user)
-      );
-      renderLoggedUser(user);
-sessionLoader.classList.add('d-none');
-appRoot.classList.remove('d-none');
-await loadBillingDashboard();
-    } catch (error) {
-      console.error(
-        'Error validando sesión:',
-        error
-      );
-      redirectToLogin();
-    }
+    // Cargamos dashboard
+    await loadBillingDashboard();
+
+  } catch (error) {
+    console.error(
+      'Error validando sesión:',
+      error
+    );
+
+    redirectToLogin();
   }
+}
 
 
 
@@ -726,7 +744,8 @@ async function savePlanChange() {
 
     await Promise.all([
       loadSubscriptions(),
-      loadMetrics()
+      loadCommercialMetrics(),
+      loadAuditLog()
     ]);
 
   } catch (error) {
@@ -965,13 +984,17 @@ const shortId =
       transaction.currency_code
     );
 
-  const refundButton =
-    document.getElementById(
-      'refundTransactionButton'
-    );
+const refundButton =
+  document.getElementById('refundTransactionButton');
+
+if (!isAdmin()) {
+  refundButton.classList.add('d-none');
+} else {
+  refundButton.classList.remove('d-none');
 
   refundButton.disabled =
     transaction.status !== 'approved';
+}
 
   const modal =
     new bootstrap.Modal(
@@ -1520,24 +1543,44 @@ async function loadSubscriptions() {
             <td>
                 <div class="d-flex flex-wrap gap-1">
                     ${
-                    subscription.status !== 'canceled'
-                    ? `
-                        <button class="action-btn" type="button" data-bs-toggle="modal" data-bs-target="#modal-upgrade" onclick="prepareUpgradeModal(
-                            '${subscription.id}',
-                            '${escapeHtml(subscription.display_name)}',
-                            '${subscription.plan_code}')">
+                    isAdmin()
+            ? (
+                subscription.status !== 'canceled'
+                  ? `
+                      <button
+                        class="action-btn"
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modal-upgrade"
+                        onclick="prepareUpgradeModal(
+                          '${subscription.id}',
+                          '${escapeHtml(subscription.display_name)}',
+                          '${subscription.plan_code}'
+                        )"
+                      >
                         Modificar Plan
-                        </button>
+                      </button>
 
-                        <button class="action-btn text-danger" type="button" onclick="openCancelSubscriptionModal('${subscription.id}')">
+                      <button
+                        class="action-btn text-danger"
+                        type="button"
+                        onclick="openCancelSubscriptionModal('${subscription.id}')"
+                      >
                         Cancelar
-                        </button>
+                      </button>
                     `
-                    : `
-                        <span class="text-muted small">
+                  : `
+                      <span class="text-muted small">
                         Sin acciones
-                        </span>
+                      </span>
                     `
+    )
+  : `
+      <span class="text-muted small">
+        <i class="bi bi-eye me-1"></i>
+        Solo lectura
+      </span>
+    `
                     }
                 </div>
                 </td>
@@ -1956,6 +1999,29 @@ function filterAuditLog() {
     visible !== 0
   );
 }
+
+
+
+function applyRoleInterface() {
+  const envBadge = document.querySelector('.env-badge');
+
+  if (!envBadge) {
+    return;
+  }
+
+  if (isAnalyst()) {
+    envBadge.innerHTML = `
+      <i class="bi bi-eye-fill me-1"></i>
+      Modo solo lectura
+    `;
+  } else {
+    envBadge.innerHTML = `
+      <i class="bi bi-check-circle-fill me-1"></i>
+      Sesión verificada
+    `;
+  }
+}
+
 
 
 
