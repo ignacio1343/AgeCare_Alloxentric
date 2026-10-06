@@ -1,5 +1,5 @@
 const db = require('../config/db');
-
+const {createCriticalResidentNotification} = require('../services/notificationService');
 
 // ======================================================
 // OBTENER MIS RESIDENTES
@@ -642,6 +642,31 @@ exports.updateResidentStatus = async (req, res) => {
 
         }
 
+        // ==============================================
+        // OBTENER ESTADO ANTERIOR
+        // ==============================================
+
+        const previousStatusResult =
+            await client.query(
+                `
+                SELECT status_code
+                FROM admin.resident_current_status
+                WHERE resident_id = $1
+                AND tenant_id = $2
+                LIMIT 1
+                FOR UPDATE
+                `,
+                [
+                    residentId,
+                    tenantId
+                ]
+            );
+
+        const previousStatus =
+            previousStatusResult.rows[0]?.status_code || null;
+
+
+
 
         // ==============================================
         // INSERTAR HISTORIAL
@@ -736,32 +761,85 @@ exports.updateResidentStatus = async (req, res) => {
         await client.query('COMMIT');
 
 
-        const caregiverName =
-            [
-                caregiver.first_name,
-                caregiver.first_last_name,
-                caregiver.second_last_name
-            ]
-                .filter(Boolean)
-                .join(' ');
+            // ==============================================
+            // CREAR ALERTA CRÍTICA SI CORRESPONDE
+            // ==============================================
+
+            let notificationResult = null;
+
+            if (
+                normalizedStatus === 'RIESGOSO' &&
+                previousStatus !== 'RIESGOSO'
+            ) {
+                try {
+
+                    notificationResult =
+                        await createCriticalResidentNotification({
+                            tenantId,
+                            residentId,
+                            statusHistoryId:
+                                historyResult.rows[0].id,
+                            observation:
+                                normalizedObservation
+                        });
+
+                    console.log(
+                        'Resultado notificación crítica:',
+                        notificationResult
+                    );
+
+                } catch (notificationError) {
+
+                    console.error(
+                        'El estado fue guardado, pero no fue posible generar la notificación crítica:',
+                        notificationError
+                    );
+
+                    notificationResult = {
+                        created: false,
+                        duplicate: false,
+                        error: true
+                    };
+
+                }
+
+            }
 
 
-        return res.status(200).json({
+            // ==============================================
+            // NOMBRE DEL CUIDADOR
+            // ==============================================
 
-            message:
-                'Estado del residente actualizado correctamente',
+            const caregiverName =
+                [
+                    caregiver.first_name,
+                    caregiver.first_last_name,
+                    caregiver.second_last_name
+                ]
+                    .filter(Boolean)
+                    .join(' ');
 
-            current_status: {
-                ...currentResult.rows[0],
 
-                caregiver_name:
-                    caregiverName
-            },
+            return res.status(200).json({
 
-            history_entry:
-                historyResult.rows[0]
+                message:
+                    'Estado del residente actualizado correctamente',
 
-        });
+                current_status: {
+                    ...currentResult.rows[0],
+                    caregiver_name:
+                        caregiverName
+                },
+
+                history_entry:
+                    historyResult.rows[0],
+
+                critical_notification:
+                    normalizedStatus === 'RIESGOSO'
+                        ? notificationResult
+                        : null
+
+            });
 
 
     } catch (error) {

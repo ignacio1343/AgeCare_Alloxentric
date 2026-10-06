@@ -1,224 +1,141 @@
-
-
 let selectedSubscriptionId = null;
 let selectedCancelSubscriptionId = null;
 let currentSubscriptions = [];
 let currentTransactions = [];
 let selectedTransactionId = null;
 let currentAuditEntries = [];
-
+let currentResidentMonitoring = [];
 let currentUserRole = null;
+let previousResidentStatuses = new Map();
+let monitoringBaselineReady = false;
+
+
+
+
 function isAdmin() {
   return currentUserRole === 'admin';
 }
+
 function isAnalyst() {
   return currentUserRole === 'analyst';
 }
 
-  
-  // ============================================
-  // SESIÓN
-  // ============================================
+// ============================================
+// SESIÓN
+// ============================================
 
-  const token =
-    sessionStorage.getItem('agecare_token');
-  const sessionLoader =
-    document.getElementById('sessionLoader');
-  const appRoot =
-    document.getElementById('appRoot');
+const token = sessionStorage.getItem('agecare_token');
+const sessionLoader = document.getElementById('sessionLoader');
+const appRoot = document.getElementById('appRoot');
 
-
-
-  // ============================================
-  // VALIDAR SESIÓN
-  // ============================================
+// ============================================
+// VALIDAR SESIÓN
+// ============================================
 
 async function validateSession() {
-
   if (!token) {
     redirectToLogin();
     return;
   }
 
-
   try {
-
-    const response =
-      await fetch('/api/auth/me', {
-        method: 'GET',
-
-        headers: {
-          'Authorization':
-            `Bearer ${token}`
-        }
-      });
-
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
     if (!response.ok) {
       redirectToLogin();
       return;
     }
 
-
-    const data =
-      await response.json();
-
-
-    // Usuario devuelto por /api/auth/me
-    const user =
-      data.user || data;
-
-
-    // ==========================================
-    // PROTEGER DASHBOARD SEGÚN ROL
-    // ==========================================
+    const data = await response.json();
+    const user = data.user || data;
 
     if (!protectAdministrativePortal(user)) {
       return;
     }
 
+    currentUserRole = user.role_code;
 
-    // Guardamos el rol actual
-    currentUserRole =
-      user.role_code;
-
-
-    // Mostramos datos del usuario
     renderLoggedUser(user);
-
-
-    // Aplicamos interfaz según rol
     applyRoleInterface();
 
-
-    // Mostramos la aplicación
     sessionLoader.classList.add('d-none');
     appRoot.classList.remove('d-none');
 
-
-    // Cargamos dashboard
     await loadBillingDashboard();
-
+    startResidentMonitoringAutoRefresh();
 
   } catch (error) {
-
-    console.error(
-      'Error validando sesión:',
-      error
-    );
-
+    console.error('Error validando sesión:', error);
     redirectToLogin();
-
   }
-
 }
 
+// ============================================
+// MOSTRAR USUARIO
+// ============================================
 
+function renderLoggedUser(user) {
+  const fullName = user.full_name || 'Usuario';
+  const role = user.role_code || 'Sin rol';
 
-  // ============================================
-  // MOSTRAR USUARIO
-  // ============================================
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(word => word.charAt(0).toUpperCase())
+    .join('');
 
-  function renderLoggedUser(user) {
-    const fullName =
-      user.full_name || 'Usuario';
-    const role =
-      user.role_code || 'Sin rol';
-    const initials =
-      fullName
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map(word =>
-          word.charAt(0).toUpperCase()
-        )
-        .join('');
+  document.getElementById('userAvatar').textContent = initials || 'U';
+  document.getElementById('userName').textContent = fullName;
+  document.getElementById('userRole').textContent = formatRole(role);
 
+  document.getElementById('mobileUserAvatar').textContent = initials || 'U';
+  document.getElementById('mobileUserName').textContent = fullName;
+  document.getElementById('mobileUserRole').textContent = formatRole(role);
+}
 
+// ============================================
+// FORMATEAR ROL
+// ============================================
 
-    // DESKTOP
-    document.getElementById(
-      'userAvatar'
-    ).textContent =
-      initials || 'U';
-    document.getElementById(
-      'userName'
-    ).textContent =
-      fullName;
-    document.getElementById(
-      'userRole'
-    ).textContent =
-      formatRole(role);
-
-    // MOBILE
-    document.getElementById(
-      'mobileUserAvatar'
-    ).textContent =
-      initials || 'U';
-    document.getElementById(
-      'mobileUserName'
-    ).textContent =
-      fullName;
-    document.getElementById(
-      'mobileUserRole'
-    ).textContent =
-      formatRole(role);
+function formatRole(role) {
+  if (!role) {
+    return 'Sin rol';
   }
 
+  return role
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+}
 
+// ============================================
+// LOGOUT
+// ============================================
 
-  // ============================================
-  // FORMATEAR ROL
-  // ============================================
+function logout() {
+  sessionStorage.removeItem('agecare_token');
+  sessionStorage.removeItem('agecare_user');
+  window.location.replace('/');
+}
 
-  function formatRole(role) {
-    if (!role) {
-      return 'Sin rol';
-    }
-    return role
-      .replaceAll('_', ' ')
-      .replace(/\b\w/g, letter =>
-        letter.toUpperCase()
-      );
-  }
+// ============================================
+// REDIRECCIÓN LOGIN
+// ============================================
 
+function redirectToLogin() {
+  sessionStorage.removeItem('agecare_token');
+  sessionStorage.removeItem('agecare_user');
+  window.location.replace('/');
+}
 
-
-  // ============================================
-  // LOGOUT
-  // ============================================
-
-  function logout() {
-    sessionStorage.removeItem(
-      'agecare_token'
-    );
-    sessionStorage.removeItem(
-      'agecare_user'
-    );
-    window.location.replace('/');
-  }
-
-
-
-  // ============================================
-  // REDIRECCIÓN LOGIN
-  // ============================================
-
-  function redirectToLogin() {
-    sessionStorage.removeItem(
-      'agecare_token'
-    );
-    sessionStorage.removeItem(
-      'agecare_user'
-    );
-    window.location.replace('/');
-  }
-
-
-
-  // ============================================
-  // VISTAS
-  // ============================================
+// ============================================
+// VISTAS
+// ============================================
 
 const viewMeta = {
   comercial: [
@@ -231,411 +148,252 @@ const viewMeta = {
     'Negocio y Ventas · Transacciones y Gestión de Cobros'
   ],
 
+  monitoreo: [
+    'Monitoreo de Residentes',
+    'Administración · Seguimiento operativo y estados de residentes'
+  ],
+
   auditoria: [
     'Auditoría Administrativa',
     'Administración · Trazabilidad de acciones'
   ]
 };
 
+let currentRowEditing = null;
 
+function switchView(viewId) {
+  document
+    .querySelectorAll('.nav-item-btn')
+    .forEach(button => {
+      button.classList.remove('active');
+    });
 
-  let currentRowEditing = null;
+  document
+    .querySelectorAll(`.nav-btn-${viewId}`)
+    .forEach(button => {
+      button.classList.add('active');
+    });
 
+  document
+    .querySelectorAll('.view')
+    .forEach(section => {
+      section.classList.remove('active');
+    });
 
+  const selectedView = document.getElementById('view-' + viewId);
 
-  function switchView(viewId) {
-    document
-      .querySelectorAll(
-        '.nav-item-btn'
-      )
-      .forEach(button => {
-        button.classList.remove(
-          'active'
-        );
-      });
-
-
-
-    document
-      .querySelectorAll(
-        `.nav-btn-${viewId}`
-      )
-      .forEach(button => {
-        button.classList.add('active');
-      });
-
-
-
-    document
-      .querySelectorAll('.view')
-      .forEach(section => {section.classList.remove('active');
-      });
-
-
-
-    const selectedView =
-      document.getElementById('view-' + viewId);
-
-
-    if (selectedView) {
-      selectedView.classList.add('active');
-    }
-
-
-
-    const metadata =
-      viewMeta[viewId];
-
-
-    if (metadata) {
-      document.getElementById(
-        'tb-title'
-      ).textContent =
-        metadata[0];
-      document.getElementById(
-        'tb-crumb'
-      ).textContent =
-        metadata[1];
-    }
+  if (selectedView) {
+    selectedView.classList.add('active');
   }
 
+  const metadata = viewMeta[viewId];
 
+  if (metadata) {
+    document.getElementById('tb-title').textContent = metadata[0];
+    document.getElementById('tb-crumb').textContent = metadata[1];
+  }
+}
 
-  // ============================================
-  // FILTRAR TRANSACCIONES
-  // ============================================
+// ============================================
+// FILTRAR TRANSACCIONES
+// ============================================
 
-  function filterTransactions() {
-    const textFilter =
-      document
-        .getElementById('searchTrx')
-        .value
-        .toLowerCase()
-        .trim();
+function filterTransactions() {
+  const textFilter = document
+    .getElementById('searchTrx')
+    .value
+    .toLowerCase()
+    .trim();
 
-    const statusFilter =
-      document
-        .getElementById('selectStatus')
-        .value;
+  const statusFilter = document
+    .getElementById('selectStatus')
+    .value;
 
+  const rows = document.querySelectorAll('#trxTable tbody tr');
 
+  let visibleCount = 0;
 
-    const rows =
-      document.querySelectorAll(
-        '#trxTable tbody tr'
-      );
+  rows.forEach(row => {
+    const rowText = row.innerText.toLowerCase();
+    const rowStatus = row.getAttribute('data-status');
 
+    const matchesText =
+      textFilter === '' ||
+      rowText.includes(textFilter);
 
+    const matchesStatus =
+      statusFilter === 'Todos' ||
+      rowStatus === statusFilter;
 
-    let visibleCount =
-      0;
-
-    rows.forEach(row => {
-      const rowText =
-        row.innerText
-          .toLowerCase();
-
-      const rowStatus =
-        row.getAttribute('data-status');
-
-
-
-      const matchesText =
-        textFilter === '' ||
-        rowText.includes(textFilter);
-
-      const matchesStatus =
-        statusFilter === 'Todos' ||
-        rowStatus ===
-          statusFilter;
-
-      if (
-        matchesText &&
-        matchesStatus) {
-
-        row.classList.remove(
-          'd-none');
-
-
-        visibleCount++;
-      } else {
-        row.classList.add(
-          'd-none'
-        );
-      }
-    });
-    const noResultsMsg =
-      document.getElementById(
-        'noResultsMsg');
-
-    if (visibleCount === 0) {
-      noResultsMsg.classList.remove(
-        'd-none'
-      );
+    if (matchesText && matchesStatus) {
+      row.classList.remove('d-none');
+      visibleCount++;
     } else {
-      noResultsMsg.classList.add(
-        'd-none'
-      );
+      row.classList.add('d-none');
     }
+  });
+
+  const noResultsMsg = document.getElementById('noResultsMsg');
+
+  if (visibleCount === 0) {
+    noResultsMsg.classList.remove('d-none');
+  } else {
+    noResultsMsg.classList.add('d-none');
   }
+}
 
-  // ============================================
-  // EXPORTAR CSV
-  // ============================================
+// ============================================
+// EXPORTAR CSV
+// ============================================
 
-  function exportTableToCSV(
-    filename = 'transacciones.csv'
-  ) {
-    const table =
-      document.getElementById(
-        'trxTable'
-      );
+function exportTableToCSV(filename = 'transacciones.csv') {
+  const table = document.getElementById('trxTable');
+  const rows = table.querySelectorAll('tr');
+  const csv = [];
 
-    const rows =
-      table.querySelectorAll(
-        'tr'
-      );
-
-    const csv =
-      [];
-
-    rows.forEach(row => {
-      if (
-        row.classList.contains(
-          'd-none'
-        )) {
-        return;
-      }
-
-      const cols =
-        row.querySelectorAll(
-          'th, td'
-        );
-
-      const rowData =
-        [];
-
-      cols.forEach(
-        (col, index) => {
-          // Ignorar columna acciones
-          if (
-            index ===
-            cols.length - 1
-          ) {
-
-            return;
-
-          }
-
-          let text =
-            col.innerText
-              .replace(
-                /(\r\n|\n|\r)/gm,
-                ' '
-              )
-              .replace(
-                /\s+/g,
-                ' '
-              )
-              .trim();
-
-          text =
-            text.replace(
-              /"/g,
-              '""'
-            );
-
-          rowData.push(
-            `"${text}"`
-          );
-
-        }
-      );
-
-      if (
-        rowData.length > 0
-      ) {
-
-        csv.push(
-          rowData.join(';')
-        );
-
-      }
-
-    });
-
-    if (
-      csv.length === 0
-    ) {
-      showToastNotification(
-        'No hay datos visibles para exportar'
-      );
+  rows.forEach(row => {
+    if (row.classList.contains('d-none')) {
       return;
     }
 
-    const csvContent =
-      '\uFEFF' +
-      csv.join('\n');
+    const cols = row.querySelectorAll('th, td');
+    const rowData = [];
 
-    const blob =
-      new Blob(
-        [csvContent],
-        {
-          type:
-            'text/csv;charset=utf-8;'
-        }
-      );
+    cols.forEach((col, index) => {
+      if (index === cols.length - 1) {
+        return;
+      }
 
-    const link =
-      document.createElement(
-        'a'
-      );
+      let text = col.innerText
+        .replace(/(\r\n|\n|\r)/gm, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-    const url =
-      URL.createObjectURL(
-        blob
-      );
+      text = text.replace(/"/g, '""');
 
-    link.setAttribute(
-      'href',
-      url
-    );
+      rowData.push(`"${text}"`);
+    });
 
-    link.setAttribute(
-      'download',
-      filename
-    );
+    if (rowData.length > 0) {
+      csv.push(rowData.join(';'));
+    }
+  });
 
-    link.style.visibility =
-      'hidden';
-
-    document.body.appendChild(
-      link
-    );
-
-    link.click();
-
-    document.body.removeChild(
-      link
-    );
-
-    URL.revokeObjectURL(
-      url
-    );
+  if (csv.length === 0) {
+    showToastNotification('No hay datos visibles para exportar');
+    return;
   }
 
+  const csvContent = '\uFEFF' + csv.join('\n');
 
+  const blob = new Blob(
+    [csvContent],
+    {
+      type: 'text/csv;charset=utf-8;'
+    }
+  );
 
-  // ============================================
-  // PREPARAR MODAL PLAN
-  // ============================================
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// PREPARAR MODAL PLAN
+// ============================================
 
 function prepareUpgradeModal(subscriptionId, clientName, currentPlan) {
   selectedSubscriptionId = subscriptionId;
-  document.getElementById(
-    'modalClientName'
-  ).value = clientName;
 
-  document.getElementById(
-    'modalPlanSelect'
-  ).value = currentPlan;
+  document.getElementById('modalClientName').value = clientName;
+  document.getElementById('modalPlanSelect').value = currentPlan;
 }
 
+// ============================================
+// ABRIR CANCELACIÓN
+// ============================================
+
 function openCancelSubscriptionModal(subscriptionId) {
-  const subscription =
-    currentSubscriptions.find(
-      item => item.id === subscriptionId
-    );
+  const subscription = currentSubscriptions.find(
+    item => item.id === subscriptionId
+  );
 
   if (!subscription) {
-    showToastNotification(
-      'No se encontró la suscripción'
-    );
+    showToastNotification('No se encontró la suscripción');
     return;
   }
 
   if (subscription.status === 'canceled') {
-    showToastNotification(
-      'La suscripción ya se encuentra cancelada'
-    );
+    showToastNotification('La suscripción ya se encuentra cancelada');
     return;
   }
 
-  selectedCancelSubscriptionId =
-    subscription.id;
+  selectedCancelSubscriptionId = subscription.id;
 
-  document.getElementById(
-    'cancelSubscriptionClient'
-  ).textContent =
-    subscription.display_name ||
-    'No disponible';
+  document.getElementById('cancelSubscriptionClient').textContent =
+    subscription.display_name || 'No disponible';
 
-  document.getElementById(
-    'cancelSubscriptionPlan'
-  ).textContent =
-    subscription.plan_name ||
-    'Sin plan';
+  document.getElementById('cancelSubscriptionPlan').textContent =
+    subscription.plan_name || 'Sin plan';
 
-  document.getElementById(
-    'cancelSubscriptionStatus'
-  ).textContent =
+  document.getElementById('cancelSubscriptionStatus').textContent =
     subscription.status === 'active'
       ? 'Activa'
       : subscription.status === 'past_due'
         ? 'Morosa'
         : subscription.status;
 
-  document.getElementById(
-    'cancelSubscriptionNextCharge'
-  ).textContent =
-    formatDate(
-      subscription.current_period_end
-    );
+  document.getElementById('cancelSubscriptionNextCharge').textContent =
+    formatDate(subscription.current_period_end);
 
-  const modal =
-    new bootstrap.Modal(
-      document.getElementById(
-        'modal-cancel-subscription'
-      )
-    );
+  const modal = new bootstrap.Modal(
+    document.getElementById('modal-cancel-subscription')
+  );
 
   modal.show();
 }
 
+// ============================================
+// CANCELAR SUSCRIPCIÓN
+// ============================================
+
 async function cancelSubscription() {
   if (!selectedCancelSubscriptionId) {
-    showToastNotification(
-      'No se pudo identificar la suscripción'
-    );
+    showToastNotification('No se pudo identificar la suscripción');
     return;
   }
 
-  const cancelButton =
-    document.getElementById(
-      'confirmCancelSubscriptionButton'
-    );
+  const cancelButton = document.getElementById(
+    'confirmCancelSubscriptionButton'
+  );
 
   try {
     cancelButton.disabled = true;
 
     cancelButton.innerHTML = `
-      <span
-        class="spinner-border spinner-border-sm me-1"
-        aria-hidden="true"
-      ></span>
+      <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
       Cancelando...
     `;
 
-    const response =
-      await authenticatedFetch(
-        `/api/billing/subscriptions/${selectedCancelSubscriptionId}/cancel`,
-        {
-          method: 'POST'
-        }
-      );
+    const response = await authenticatedFetch(
+      `/api/billing/subscriptions/${selectedCancelSubscriptionId}/cancel`,
+      {
+        method: 'POST'
+      }
+    );
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
     if (!response.ok) {
       throw new Error(
@@ -644,23 +402,17 @@ async function cancelSubscription() {
       );
     }
 
-    const modalElement =
-      document.getElementById(
-        'modal-cancel-subscription'
-      );
+    const modalElement = document.getElementById(
+      'modal-cancel-subscription'
+    );
 
-    const modal =
-      bootstrap.Modal.getInstance(
-        modalElement
-      );
+    const modal = bootstrap.Modal.getInstance(modalElement);
 
     if (modal) {
       modal.hide();
     }
 
-    showToastNotification(
-      'Suscripción cancelada correctamente'
-    );
+    showToastNotification('Suscripción cancelada correctamente');
 
     selectedCancelSubscriptionId = null;
 
@@ -690,54 +442,50 @@ async function cancelSubscription() {
   }
 }
 
-  // ============================================
-  // GUARDAR CAMBIO PLAN
-  // ============================================
+// ============================================
+// GUARDAR CAMBIO PLAN
+// ============================================
+
 async function savePlanChange() {
   if (!selectedSubscriptionId) {
     showToastNotification(
       'No se pudo identificar la suscripción'
     );
+
     return;
   }
 
-  const select =
-    document.getElementById('modalPlanSelect');
+  const select = document.getElementById('modalPlanSelect');
+  const planCode = select.value;
 
-  const planCode =
-    select.value;
-
-  const saveButton =
-    document.querySelector(
-      '#modal-upgrade .btn-primary'
-    );
+  const saveButton = document.querySelector(
+    '#modal-upgrade .btn-primary'
+  );
 
   try {
     saveButton.disabled = true;
+
     saveButton.innerHTML = `
-      <span
-        class="spinner-border spinner-border-sm me-1"
-        aria-hidden="true"
-      ></span>
+      <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
       Guardando...
     `;
 
-    const response =
-      await authenticatedFetch(
-        `/api/billing/subscriptions/${selectedSubscriptionId}/plan`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            plan_code: planCode
-          })
-        }
-      );
+    const response = await authenticatedFetch(
+      `/api/billing/subscriptions/${selectedSubscriptionId}/plan`,
+      {
+        method: 'PUT',
 
-    const data =
-      await response.json();
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          plan_code: planCode
+        })
+      }
+    );
+
+    const data = await response.json();
 
     if (!response.ok) {
       throw new Error(
@@ -746,15 +494,11 @@ async function savePlanChange() {
       );
     }
 
-    const modalElement =
-      document.getElementById(
-        'modal-upgrade'
-      );
+    const modalElement = document.getElementById(
+      'modal-upgrade'
+    );
 
-    const modal =
-      bootstrap.Modal.getInstance(
-        modalElement
-      );
+    const modal = bootstrap.Modal.getInstance(modalElement);
 
     if (modal) {
       modal.hide();
@@ -785,67 +529,77 @@ async function savePlanChange() {
 
   } finally {
     saveButton.disabled = false;
-    saveButton.innerHTML =
-      'Guardar Cambios';
+    saveButton.innerHTML = 'Guardar Cambios';
   }
 }
 
-  // ============================================
-  // REINTENTO PAGO
-  // ============================================
+// ============================================
+// REINTENTO PAGO
+// ============================================
 
-  function retryPayment() {
-    showToastNotification(
-      'Solicitud de reintento iniciada'
-    );
-  }
+function retryPayment() {
+  showToastNotification(
+    'Solicitud de reintento iniciada'
+  );
+}
 
-  // ============================================
-  // TOAST
-  // ============================================
+// ============================================
+// TOAST
+// ============================================
 
-  function showToastNotification(message) {
+function showToastNotification(message) {
+  const toastEl = document.getElementById(
+    'toastNotification'
+  );
 
-    const toastEl =
-      document.getElementById('toastNotification');
+  const toastBody = document.getElementById(
+    'toastMessage'
+  );
 
-    const toastBody =
-      document.getElementById('toastMessage');
-    toastBody.innerHTML =
-      `
-        <i
-          class="bi bi-check-circle-fill text-success fs-6"
-        ></i>
+  toastBody.innerHTML = `
+    <i class="bi bi-check-circle-fill text-success fs-6"></i>
+    ${message}
+  `;
 
-        ${message}
-      `;
-    const toast =
-      bootstrap.Toast.getOrCreateInstance(
-        toastEl,
-        {
-          delay: 3000
-        }
-      );
-    toast.show();
-  }
+  const toast = bootstrap.Toast.getOrCreateInstance(
+    toastEl,
+    {
+      delay: 3000
+    }
+  );
+
+  toast.show();
+}
 
 // ============================================
 // FETCH AUTENTICADO
 // ============================================
 
 async function authenticatedFetch(url, options = {}) {
-  const currentToken = sessionStorage.getItem('agecare_token');
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      Authorization: `Bearer ${currentToken}`
+  const currentToken = sessionStorage.getItem(
+    'agecare_token'
+  );
+
+  const response = await fetch(
+    url,
+    {
+      ...options,
+
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${currentToken}`
+      }
     }
-  });
+  );
+
   if (response.status === 401) {
     redirectToLogin();
-    throw new Error('Sesión expirada');
+
+    throw new Error(
+      'Sesión expirada'
+    );
   }
+
   return response;
 }
 
@@ -854,9 +608,13 @@ async function authenticatedFetch(url, options = {}) {
 // ============================================
 
 function escapeHtml(value) {
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return '';
   }
+
   return String(value)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -865,25 +623,37 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
-
-function formatCurrency(amount, currency = 'CLP') {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: currency,
-    maximumFractionDigits: 0
-  }).format(Number(amount || 0));
+function formatCurrency(
+  amount,
+  currency = 'CLP'
+) {
+  return new Intl.NumberFormat(
+    'es-CL',
+    {
+      style: 'currency',
+      currency: currency,
+      maximumFractionDigits: 0
+    }
+  ).format(
+    Number(amount || 0)
+  );
 }
-
 
 function formatDate(value) {
   if (!value) {
     return 'N/A';
   }
-  return new Intl.DateTimeFormat('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(new Date(value));
+
+  return new Intl.DateTimeFormat(
+    'es-CL',
+    {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }
+  ).format(
+    new Date(value)
+  );
 }
 
 function formatDateTime(value) {
@@ -891,13 +661,18 @@ function formatDateTime(value) {
     return 'No disponible';
   }
 
-  return new Intl.DateTimeFormat('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat(
+    'es-CL',
+    {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }
+  ).format(
+    new Date(value)
+  );
 }
 
 function transactionStatusLabel(status) {
@@ -907,30 +682,38 @@ function transactionStatusLabel(status) {
     pending: 'Pendiente',
     canceled: 'Cancelado',
     refunded: 'Reembolsado',
-    partially_refunded: 'Reembolso parcial'
+    partially_refunded:
+      'Reembolso parcial'
   };
 
-  return statuses[status] || status || 'Desconocido';
+  return (
+    statuses[status] ||
+    status ||
+    'Desconocido'
+  );
 }
 
+// ============================================
+// MODAL TRANSACCIÓN
+// ============================================
+
 function openTransactionModal(transactionId) {
-  const transaction =
-    currentTransactions.find(
-      item => item.id === transactionId
-    );
+  const transaction = currentTransactions.find(
+    item => item.id === transactionId
+  );
 
   if (!transaction) {
     showToastNotification(
       'No se encontró la transacción'
     );
+
     return;
   }
 
   selectedTransactionId =
     transaction.id;
 
-const shortId =
-  transaction.id
+  const shortId = transaction.id
     .slice(-8)
     .toUpperCase();
 
@@ -1008,51 +791,66 @@ const shortId =
       transaction.currency_code
     );
 
-const refundButton =
-  document.getElementById('refundTransactionButton');
+  const refundButton = document.getElementById(
+    'refundTransactionButton'
+  );
 
-if (!isAdmin()) {
-  refundButton.classList.add('d-none');
-} else {
-  refundButton.classList.remove('d-none');
-
-  refundButton.disabled =
-    transaction.status !== 'approved';
-}
-
-  const modal =
-    new bootstrap.Modal(
-      document.getElementById(
-        'modal-detalle'
-      )
+  if (!isAdmin()) {
+    refundButton.classList.add(
+      'd-none'
     );
+  } else {
+    refundButton.classList.remove(
+      'd-none'
+    );
+
+    refundButton.disabled =
+      transaction.status !== 'approved';
+  }
+
+  const modal = new bootstrap.Modal(
+    document.getElementById(
+      'modal-detalle'
+    )
+  );
 
   modal.show();
 }
+
+// ============================================
+// CONFIRMACIÓN REEMBOLSO
+// ============================================
+
 function openRefundConfirmation() {
   if (!selectedTransactionId) {
     showToastNotification(
       'No se pudo identificar la transacción'
     );
+
     return;
   }
 
   const transaction =
     currentTransactions.find(
-      item => item.id === selectedTransactionId
+      item =>
+        item.id === selectedTransactionId
     );
 
   if (!transaction) {
     showToastNotification(
       'No se encontró la transacción'
     );
+
     return;
   }
 
-  if (transaction.status !== 'approved') {
+  if (
+    transaction.status !== 'approved'
+  ) {
     showToastNotification(
       'Solo se pueden reembolsar transacciones aprobadas'
     );
+
     return;
   }
 
@@ -1087,7 +885,9 @@ function openRefundConfirmation() {
     );
 
   const detailModalElement =
-    document.getElementById('modal-detalle');
+    document.getElementById(
+      'modal-detalle'
+    );
 
   const detailModal =
     bootstrap.Modal.getInstance(
@@ -1116,11 +916,16 @@ function openRefundConfirmation() {
   );
 }
 
+// ============================================
+// REEMBOLSO
+// ============================================
+
 async function requestTransactionRefund() {
   if (!selectedTransactionId) {
     showToastNotification(
       'No se pudo identificar la transacción'
     );
+
     return;
   }
 
@@ -1133,10 +938,7 @@ async function requestTransactionRefund() {
     refundButton.disabled = true;
 
     refundButton.innerHTML = `
-      <span
-        class="spinner-border spinner-border-sm me-1"
-        aria-hidden="true"
-      ></span>
+      <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
       Procesando...
     `;
 
@@ -1204,15 +1006,19 @@ async function requestTransactionRefund() {
   }
 }
 
+// ============================================
+// TIPO DE CUENTA
+// ============================================
+
 function formatAccountType(type) {
   const types = {
     family: 'Familia',
     agency: 'Agencia',
     caregiver: 'Cuidador'
   };
+
   return types[type] || type;
 }
-
 
 // ============================================
 // MÉTRICAS
@@ -1221,196 +1027,249 @@ function formatAccountType(type) {
 async function loadMetrics() {
   try {
     const response =
-      await authenticatedFetch('/api/billing/metrics');
+      await authenticatedFetch(
+        '/api/billing/metrics'
+      );
+
     if (!response.ok) {
-      throw new Error('Error cargando métricas');
+      throw new Error(
+        'Error cargando métricas'
+      );
     }
 
-    const data = await response.json();
-    const metrics = data.metrics;
+    const data =
+      await response.json();
+
+    const metrics =
+      data.metrics;
 
     document.getElementById(
       'kpiApprovedToday'
-    ).textContent = metrics.approved_today;
+    ).textContent =
+      metrics.approved_today;
 
     document.getElementById(
       'kpiApprovedAmount'
-    ).textContent = formatCurrency(
-      metrics.approved_amount_today
-    );
+    ).textContent =
+      formatCurrency(
+        metrics.approved_amount_today
+      );
 
     document.getElementById(
       'kpiFailedTransactions'
-    ).textContent = metrics.failed_transactions;
+    ).textContent =
+      metrics.failed_transactions;
 
     document.getElementById(
       'kpiSuccessRate'
-    ).textContent = `${metrics.success_rate}%`;
+    ).textContent =
+      `${metrics.success_rate}%`;
 
   } catch (error) {
-
     console.error(
       'Error cargando métricas:',
       error
     );
-
   }
 }
-
 
 // ============================================
 // TRANSACCIONES
 // ============================================
 
 async function loadTransactions() {
-
   const tbody =
-    document.getElementById('transactionsBody');
-  try {
+    document.getElementById(
+      'transactionsBody'
+    );
 
+  try {
     const response =
       await authenticatedFetch(
         '/api/billing/transactions'
       );
+
     if (!response.ok) {
       throw new Error(
         'Error cargando transacciones'
       );
     }
+
     const data =
-        await response.json();
+      await response.json();
 
-        currentTransactions =
-        data.transactions || [];
+    currentTransactions =
+      data.transactions || [];
 
-        const transactions =
-        currentTransactions;
+    const transactions =
+      currentTransactions;
 
     if (!transactions.length) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6"
-              class="text-center text-muted py-4">
+          <td colspan="6" class="text-center text-muted py-4">
             No hay transacciones registradas.
           </td>
         </tr>
       `;
+
       return;
     }
 
-
     tbody.innerHTML =
-      transactions.map(transaction => {
+      transactions
+        .map(
+          transaction => {
+            let statusLabel = '';
+            let statusClass =
+              'neutral';
+            let icon = '●';
 
-        let statusLabel = '';
-        let statusClass = 'neutral';
-        let icon = '●';
-        switch (transaction.status) {
+            switch (
+              transaction.status
+            ) {
+              case 'approved':
+                statusLabel =
+                  'Aprobado';
 
-          case 'approved':
-            statusLabel = 'Aprobado';
-            statusClass = 'ok';
-            icon = '✔';
-            break;
+                statusClass =
+                  'ok';
 
-          case 'failed':
-            statusLabel = 'Fallido';
-            statusClass = 'crit';
-            icon = '✖';
-            break;
+                icon = '✔';
 
-          case 'refunded':
-            statusLabel = 'Reembolsado';
-            statusClass = 'warn';
-            icon = '↩';
-            break;
+                break;
 
-          case 'partially_refunded':
-            statusLabel = 'Reembolso parcial';
-            statusClass = 'warn';
-            icon = '↩';
-            break;
+              case 'failed':
+                statusLabel =
+                  'Fallido';
 
-          case 'pending':
-            statusLabel = 'Pendiente';
-            break;
+                statusClass =
+                  'crit';
 
-          case 'canceled':
-            statusLabel = 'Cancelado';
-            statusClass = 'crit';
-            icon = '✖';
-            break;
+                icon = '✖';
 
-          default:
-            statusLabel = transaction.status;
-        }
+                break;
 
-const shortId =
-  transaction.id
-    .slice(-8)
-    .toUpperCase();
+              case 'refunded':
+                statusLabel =
+                  'Reembolsado';
 
-        return `
-          <tr data-status="${statusLabel}">
+                statusClass =
+                  'warn';
 
-            <td>
-              <span class="font-monospace text-muted">
-                #${shortId}
-              </span>
-            </td>
+                icon = '↩';
 
-            <td>
-              <div class="fw-semibold">
-                ${escapeHtml(transaction.display_name)}
-              </div>
+                break;
 
-              <div class="text-muted"
-                   style="font-size:10.5px;">
-                ${escapeHtml(
-                  formatAccountType(
-                    transaction.account_type
-                  )
-                )}
-              </div>
-            </td>
+              case 'partially_refunded':
+                statusLabel =
+                  'Reembolso parcial';
 
-            <td>
-              <span class="chip neutral">
-                ${escapeHtml(
-                  transaction.plan_name || 'Sin plan'
-                )}
-              </span>
-            </td>
+                statusClass =
+                  'warn';
 
-            <td class="text-end fw-semibold">
-              ${formatCurrency(
-                transaction.amount,
-                transaction.currency_code
-              )}
-            </td>
+                icon = '↩';
 
-            <td>
-              <span class="chip ${statusClass}">
-                ${icon}
-                ${escapeHtml(statusLabel)}
-              </span>
-            </td>
+                break;
+
+              case 'pending':
+                statusLabel =
+                  'Pendiente';
+
+                break;
+
+              case 'canceled':
+                statusLabel =
+                  'Cancelado';
+
+                statusClass =
+                  'crit';
+
+                icon = '✖';
+
+                break;
+
+              default:
+                statusLabel =
+                  transaction.status;
+            }
+
+            const shortId =
+              transaction.id
+                .slice(-8)
+                .toUpperCase();
+
+            return `
+              <tr data-status="${statusLabel}">
                 <td>
-                <button class="action-btn" type="button" onclick="openTransactionModal('${transaction.id}')"> Ver Recibo </button>
+                  <span class="font-monospace text-muted">
+                    #${shortId}
+                  </span>
                 </td>
-          </tr>
-        `;
-      }).join('');
+
+                <td>
+                  <div class="fw-semibold">
+                    ${escapeHtml(
+                      transaction.display_name
+                    )}
+                  </div>
+
+                  <div class="text-muted" style="font-size:10.5px;">
+                    ${escapeHtml(
+                      formatAccountType(
+                        transaction.account_type
+                      )
+                    )}
+                  </div>
+                </td>
+
+                <td>
+                  <span class="chip neutral">
+                    ${escapeHtml(
+                      transaction.plan_name ||
+                      'Sin plan'
+                    )}
+                  </span>
+                </td>
+
+                <td class="text-end fw-semibold">
+                  ${formatCurrency(
+                    transaction.amount,
+                    transaction.currency_code
+                  )}
+                </td>
+
+                <td>
+                  <span class="chip ${statusClass}">
+                    ${icon}
+                    ${escapeHtml(statusLabel)}
+                  </span>
+                </td>
+
+                <td>
+                  <button
+                    class="action-btn"
+                    type="button"
+                    onclick="openTransactionModal('${transaction.id}')"
+                  >
+                    Ver Recibo
+                  </button>
+                </td>
+              </tr>
+            `;
+          }
+        )
+        .join('');
 
   } catch (error) {
     console.error(
       'Error cargando transacciones:',
       error
     );
+
     tbody.innerHTML = `
       <tr>
-        <td colspan="6"
-            class="text-center text-danger py-4">
+        <td colspan="6" class="text-center text-danger py-4">
           No fue posible cargar las transacciones.
         </td>
       </tr>
@@ -1418,204 +1277,241 @@ const shortId =
   }
 }
 
-
 // ============================================
 // SUSCRIPCIONES
 // ============================================
 
 async function loadSubscriptions() {
   const tbody =
-    document.getElementById('subscriptionsBody');
+    document.getElementById(
+      'subscriptionsBody'
+    );
+
   try {
     const response =
       await authenticatedFetch(
         '/api/billing/subscriptions'
       );
+
     if (!response.ok) {
       throw new Error(
         'Error cargando suscripciones'
       );
     }
+
     const data =
-    await response.json();
+      await response.json();
 
     currentSubscriptions =
-    data.subscriptions || [];
+      data.subscriptions || [];
 
     const subscriptions =
-    currentSubscriptions;
+      currentSubscriptions;
+
     if (!subscriptions.length) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6"
-              class="text-center text-muted py-4">
+          <td colspan="6" class="text-center text-muted py-4">
             No hay suscripciones registradas.
           </td>
         </tr>
       `;
+
       return;
     }
 
-
     tbody.innerHTML =
-      subscriptions.map(subscription => {
-        let statusLabel = '';
-        let statusClass = 'neutral';
-        switch (subscription.status) {
-          case 'active':
-            statusLabel = 'Activa';
-            statusClass = 'ok';
-            break;
+      subscriptions
+        .map(
+          subscription => {
+            let statusLabel = '';
+            let statusClass =
+              'neutral';
 
-          case 'past_due':
-            statusLabel = 'Morosa';
-            statusClass = 'crit';
-            break;
+            switch (
+              subscription.status
+            ) {
+              case 'active':
+                statusLabel =
+                  'Activa';
 
-          case 'trialing':
-            statusLabel = 'Periodo de prueba';
-            break;
+                statusClass =
+                  'ok';
 
-          case 'pending':
-            statusLabel = 'Pendiente';
-            break;
+                break;
 
-          case 'paused':
-            statusLabel = 'Pausada';
-            statusClass = 'warn';
-            break;
+              case 'past_due':
+                statusLabel =
+                  'Morosa';
 
-          case 'canceled':
-            statusLabel = 'Cancelada';
-            statusClass = 'crit';
-            break;
+                statusClass =
+                  'crit';
 
-          default:
-            statusLabel = subscription.status;
-        }
+                break;
 
-        let paymentMethod =
-          'No registrado';
+              case 'trialing':
+                statusLabel =
+                  'Periodo de prueba';
 
-        if (
-          subscription.brand &&
-          subscription.last4
-        ) {
+                break;
 
-          paymentMethod =
-            `${escapeHtml(subscription.brand)}
-            •••• ${escapeHtml(subscription.last4)}`;
-        }
+              case 'pending':
+                statusLabel =
+                  'Pendiente';
 
+                break;
 
-        let nextCharge =
-          formatDate(
-            subscription.current_period_end
-          );
+              case 'paused':
+                statusLabel =
+                  'Pausada';
 
-        if (
-          subscription.status === 'canceled'
-        ) {
-          nextCharge = 'Cancelada';
-        }
+                statusClass =
+                  'warn';
 
-        return `
-          <tr>
+                break;
 
-            <td>
+              case 'canceled':
+                statusLabel =
+                  'Cancelada';
 
-              <div class="fw-semibold">
-                ${escapeHtml(
-                subscription.display_name
-                )}
-              </div>
+                statusClass =
+                  'crit';
 
-              <div class="text-muted" style="font-size:10.5px;">
-                ${escapeHtml(
-                  formatAccountType(
-                    subscription.account_type
-                  )
-                )}
-              </div>
-            </td>
+                break;
 
-            <td>
-              <span class="chip neutral">
-                ${escapeHtml(
-                  subscription.plan_name
-                )}
-              </span>
-            </td>
+              default:
+                statusLabel =
+                  subscription.status;
+            }
 
-            <td>
+            let paymentMethod =
+              'No registrado';
 
-              <span
-                class="chip ${statusClass}"
-              >
-                ${escapeHtml(statusLabel)}
-              </span>
+            if (
+              subscription.brand &&
+              subscription.last4
+            ) {
+              paymentMethod =
+                `${escapeHtml(
+                  subscription.brand
+                )} •••• ${escapeHtml(
+                  subscription.last4
+                )}`;
+            }
 
-            </td>
-            <td>
-              ${nextCharge}
-            </td>
+            let nextCharge =
+              formatDate(
+                subscription.current_period_end
+              );
 
-            <td>
-              ${paymentMethod}
-            </td>
+            if (
+              subscription.status ===
+              'canceled'
+            ) {
+              nextCharge =
+                'Cancelada';
+            }
 
-            <td>
-                <div class="d-flex flex-wrap gap-1">
-                    ${
-                    isAdmin()
-            ? (
-                subscription.status !== 'canceled'
-                  ? `
-                      <button
-                        class="action-btn"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modal-upgrade"
-                        onclick="prepareUpgradeModal(
-                          '${subscription.id}',
-                          '${escapeHtml(subscription.display_name)}',
-                          '${subscription.plan_code}'
-                        )"
-                      >
-                        Modificar Plan
-                      </button>
+            return `
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    ${escapeHtml(
+                      subscription.display_name
+                    )}
+                  </div>
 
-                      <button
-                        class="action-btn text-danger"
-                        type="button"
-                        onclick="openCancelSubscriptionModal('${subscription.id}')"
-                      >
-                        Cancelar
-                      </button>
-                    `
-                  : `
-                      <span class="text-muted small">
-                        Sin acciones
-                      </span>
-                    `
-    )
-  : `
-      <span class="text-muted small">
-        <i class="bi bi-eye me-1"></i>
-        Solo lectura
-      </span>
-    `
-                    }
-                </div>
+                  <div class="text-muted" style="font-size:10.5px;">
+                    ${escapeHtml(
+                      formatAccountType(
+                        subscription.account_type
+                      )
+                    )}
+                  </div>
                 </td>
 
-          </tr>
-        `;
+                <td>
+                  <span class="chip neutral">
+                    ${escapeHtml(
+                      subscription.plan_name
+                    )}
+                  </span>
+                </td>
 
-      }).join('');
+                <td>
+                  <span class="chip ${statusClass}">
+                    ${escapeHtml(statusLabel)}
+                  </span>
+                </td>
+
+                <td>
+                  ${nextCharge}
+                </td>
+
+                <td>
+                  ${paymentMethod}
+                </td>
+
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+
+                    ${
+                      isAdmin()
+
+                        ? (
+                            subscription.status !==
+                            'canceled'
+
+                              ? `
+                                <button
+                                  class="action-btn"
+                                  type="button"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#modal-upgrade"
+                                  onclick="prepareUpgradeModal(
+                                    '${subscription.id}',
+                                    '${escapeHtml(
+                                      subscription.display_name
+                                    )}',
+                                    '${subscription.plan_code}'
+                                  )"
+                                >
+                                  Modificar Plan
+                                </button>
+
+                                <button
+                                  class="action-btn text-danger"
+                                  type="button"
+                                  onclick="openCancelSubscriptionModal('${subscription.id}')"
+                                >
+                                  Cancelar
+                                </button>
+                              `
+
+                              : `
+                                <span class="text-muted small">
+                                  Sin acciones
+                                </span>
+                              `
+                          )
+
+                        : `
+                          <span class="text-muted small">
+                            <i class="bi bi-eye me-1"></i>
+                            Solo lectura
+                          </span>
+                        `
+                    }
+
+                  </div>
+                </td>
+              </tr>
+            `;
+          }
+        )
+        .join('');
 
   } catch (error) {
-
     console.error(
       'Error cargando suscripciones:',
       error
@@ -1623,18 +1519,663 @@ async function loadSubscriptions() {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="6"
-            class="text-center text-danger py-4">
+        <td colspan="6" class="text-center text-danger py-4">
           No fue posible cargar las suscripciones.
         </td>
       </tr>
     `;
-
   }
 }
 
 // ============================================
-// CARGAR INFORMACIÓN COMERCIAL
+// MONITOREO DE RESIDENTES
+// ============================================
+
+function residentStatusPresentation(status) {
+  const map = {
+    RIESGOSO: {
+      label: 'Riesgoso',
+      chip: 'crit',
+      icon: 'bi-exclamation-octagon-fill'
+    },
+
+    ALERTA: {
+      label: 'Alerta',
+      chip: 'warn',
+      icon: 'bi-exclamation-triangle-fill'
+    },
+
+    NORMAL: {
+      label: 'Normal',
+      chip: 'ok',
+      icon: 'bi-check-circle-fill'
+    },
+
+    SIN_REGISTRAR: {
+      label: 'Sin registrar',
+      chip: 'neutral',
+      icon: 'bi-dash-circle'
+    }
+  };
+
+  return (
+    map[status] ||
+    map.SIN_REGISTRAR
+  );
+}
+
+// ============================================
+// EDAD DEL RESIDENTE
+// ============================================
+
+function calculateResidentAge(birthDate) {
+  if (!birthDate) return null;
+
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDifference = today.getMonth() - birth.getMonth();
+
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 && today.getDate() < birth.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+}
+
+
+// ============================================
+// RENDER HISTORIAL RESIDENTE
+// ============================================
+
+function renderResidentHistoryList(history) {
+  const container = document.getElementById('residentHistoryList');
+
+  if (!history || history.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-muted border rounded-3 p-4">
+        Todavía no existen registros de estado para este residente.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = history.map(item => {
+    const presentation = residentStatusPresentation(item.status_code);
+
+    const caregiverName = [
+      item.caregiver_first_name,
+      item.caregiver_last_name,
+      item.caregiver_second_last_name
+    ]
+      .filter(Boolean)
+      .join(' ') || 'Cuidador no identificado';
+
+    return `
+      <div class="border rounded-3 p-3 mb-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+          <div>
+            <span class="chip ${presentation.chip}">
+              <i class="bi ${presentation.icon}"></i>
+              ${escapeHtml(presentation.label)}
+            </span>
+
+            <div class="fw-semibold mt-2">
+              ${escapeHtml(item.observation || 'Sin observaciones.')}
+            </div>
+
+            <div class="text-muted mt-1" style="font-size:11.5px;">
+              <i class="bi bi-person me-1"></i>
+              ${escapeHtml(caregiverName)}
+            </div>
+          </div>
+
+          <div class="text-muted text-end" style="font-size:11.5px;">
+            <i class="bi bi-clock me-1"></i>
+            ${escapeHtml(formatDateTime(item.created_at))}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+
+// ============================================
+// ABRIR HISTORIAL DEL RESIDENTE
+// ============================================
+
+async function openResidentHistory(residentId) {
+  const modalElement = document.getElementById('residentHistoryModal');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+  const loader = document.getElementById('residentHistoryLoader');
+  const content = document.getElementById('residentHistoryContent');
+  const errorBox = document.getElementById('residentHistoryError');
+
+  loader.classList.remove('d-none');
+  content.classList.add('d-none');
+  errorBox.classList.add('d-none');
+  errorBox.textContent = '';
+
+  modal.show();
+
+  try {
+    const response = await authenticatedFetch(
+      `/api/admin/monitoring/residents/${residentId}/history`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        'No fue posible cargar el historial del residente'
+      );
+    }
+
+    const resident = data.resident;
+    const metrics = data.history_metrics || {};
+    const history = data.history || [];
+
+    // ========================================
+    // NOMBRE
+    // ========================================
+
+    const residentName = [
+      resident.first_name,
+      resident.first_last_name,
+      resident.second_last_name
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    document.getElementById('historyResidentName').textContent =
+      residentName || 'Residente';
+
+    document.getElementById('historyResidentRun').textContent =
+      `RUN: ${resident.run_number}-${resident.check_digit}`;
+
+    // ========================================
+    // DATOS GENERALES
+    // ========================================
+
+    document.getElementById('historyFamilyGroup').textContent =
+      resident.family_group_name || 'Sin núcleo';
+
+    const assignedCaregiver = [
+      resident.assigned_caregiver_first_name,
+      resident.assigned_caregiver_last_name
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    document.getElementById('historyAssignedCaregiver').textContent =
+      assignedCaregiver || 'Sin cuidador asignado';
+
+    const age = calculateResidentAge(resident.birth_date);
+
+    document.getElementById('historyResidentAge').textContent =
+      age !== null
+        ? `${age} años`
+        : 'No registrada';
+
+    // ========================================
+    // ESTADO ACTUAL
+    // ========================================
+
+    const currentStatus =
+      resident.current_status_code ||
+      'SIN_REGISTRAR';
+
+    const presentation =
+      residentStatusPresentation(currentStatus);
+
+    document.getElementById('historyCurrentStatus').innerHTML = `
+      <span class="chip ${presentation.chip}">
+        <i class="bi ${presentation.icon}"></i>
+        ${escapeHtml(presentation.label)}
+      </span>
+    `;
+
+    const recordedBy = [
+      resident.current_recorded_by_first_name,
+      resident.current_recorded_by_last_name
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    if (resident.current_updated_at) {
+      document.getElementById('historyCurrentMeta').textContent =
+        `Actualizado ${formatDateTime(resident.current_updated_at)}${
+          recordedBy ? ` · Registrado por ${recordedBy}` : ''
+        }`;
+    } else {
+      document.getElementById('historyCurrentMeta').textContent =
+        'Todavía no existe un estado registrado.';
+    }
+
+    document.getElementById('historyCurrentObservation').textContent =
+      resident.current_observation ||
+      'Sin observaciones registradas.';
+
+    // ========================================
+    // SALUD
+    // ========================================
+
+    document.getElementById('historyHealthNotes').textContent =
+      resident.health_notes ||
+      'Sin información adicional registrada.';
+
+    // ========================================
+    // KPI HISTORIAL
+    // ========================================
+
+    document.getElementById('historyTotalRecords').textContent =
+      metrics.total ?? 0;
+
+    document.getElementById('historyNormalRecords').textContent =
+      metrics.normal ?? 0;
+
+    document.getElementById('historyAlertRecords').textContent =
+      metrics.alert ?? 0;
+
+    document.getElementById('historyRiskyRecords').textContent =
+      metrics.risky ?? 0;
+
+    // ========================================
+    // HISTORIAL
+    // ========================================
+
+    renderResidentHistoryList(history);
+
+    loader.classList.add('d-none');
+    content.classList.remove('d-none');
+
+  } catch (error) {
+    console.error(
+      'Error cargando historial del residente:',
+      error
+    );
+
+    loader.classList.add('d-none');
+
+    errorBox.textContent =
+      error.message ||
+      'No fue posible cargar el historial.';
+
+    errorBox.classList.remove('d-none');
+  }
+}
+
+// ============================================
+// KPIS MONITOREO
+// ============================================
+
+function updateResidentMonitoringMetrics(
+  metrics = {}
+) {
+  document.getElementById(
+    'monitorTotalResidents'
+  ).textContent =
+    metrics.total ?? 0;
+
+  document.getElementById(
+    'monitorRisky'
+  ).textContent =
+    metrics.risky ?? 0;
+
+  document.getElementById(
+    'monitorAlert'
+  ).textContent =
+    metrics.alert ?? 0;
+
+  document.getElementById(
+    'monitorNormal'
+  ).textContent =
+    metrics.normal ?? 0;
+
+  document.getElementById(
+    'monitorNoStatus'
+  ).textContent =
+    metrics.unregistered ?? 0;
+}
+
+// ============================================
+// RENDER MONITOREO
+// ============================================
+
+function renderResidentMonitoring(residents) {
+  const tbody =
+    document.getElementById(
+      'monitoringBody'
+    );
+
+  if (!residents.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+          No hay residentes activos para monitorear.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  tbody.innerHTML =
+    residents
+      .map(
+        item => {
+          const status =
+            item.status_code ||
+            'SIN_REGISTRAR';
+
+          const presentation =
+            residentStatusPresentation(
+              status
+            );
+
+          const residentName = [
+            item.first_name,
+            item.first_last_name,
+            item.second_last_name
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          const assignedCaregiver = [
+            item.assigned_caregiver_first_name,
+            item.assigned_caregiver_last_name
+          ]
+            .filter(Boolean)
+            .join(' ') ||
+            'Sin cuidador asignado';
+
+          const recordedBy = [
+            item.recorded_by_first_name,
+            item.recorded_by_last_name
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          const lastControl =
+            item.updated_at
+
+              ? `
+                ${formatDateTime(
+                  item.updated_at
+                )}
+
+                ${
+                  recordedBy
+                    ? `
+                      <div class="text-muted mt-1">
+                        Por ${escapeHtml(recordedBy)}
+                      </div>
+                    `
+                    : ''
+                }
+              `
+
+              : `
+                <span class="text-muted">
+                  Sin registro
+                </span>
+              `;
+
+          const observation =
+            item.observation
+
+              ? escapeHtml(
+                  item.observation
+                )
+
+              : `
+                <span class="text-muted">
+                  Sin observación
+                </span>
+              `;
+
+          const rowClass =
+            status === 'RIESGOSO'
+
+              ? 'monitor-row-risky'
+
+              : status === 'ALERTA'
+
+                ? 'monitor-row-alert'
+
+                : '';
+
+          return `
+            <tr
+              class="${rowClass}"
+              data-status="${escapeHtml(status)}"
+            >
+
+              <td>
+                <span class="chip ${presentation.chip}">
+                  <i class="bi ${presentation.icon}"></i>
+                  ${presentation.label}
+                </span>
+              </td>
+
+              <td>
+                <button
+                  type="button"
+                  class="action-btn p-0 text-start monitor-resident-name"
+                  onclick="openResidentHistory('${item.id}')"
+                >
+                  <i class="bi bi-person-lines-fill me-1"></i>
+                  ${escapeHtml(residentName)}
+                </button>
+
+                <div class="text-muted mt-1">
+                  RUN ${escapeHtml(item.run_number)}-${escapeHtml(item.check_digit)}
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0 mt-1 text-decoration-none"
+                  style="font-size:11px;"
+                  onclick="openResidentHistory('${item.id}')"
+                >
+                  Ver historial
+                  <i class="bi bi-chevron-right ms-1"></i>
+                </button>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.family_group_name ||
+                  'Sin núcleo'
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  assignedCaregiver
+                )}
+              </td>
+
+              <td>
+                ${lastControl}
+              </td>
+
+              <td class="monitor-observation">
+                ${observation}
+              </td>
+
+            </tr>
+          `;
+        }
+      )
+      .join('');
+}
+
+// ============================================
+// CARGAR MONITOREO
+// ============================================
+
+async function loadResidentMonitoring() {
+  const tbody =
+    document.getElementById(
+      'monitoringBody'
+    );
+
+  if (!tbody) {
+    return;
+  }
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" class="text-center text-muted py-4">
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Cargando monitoreo...
+      </td>
+    </tr>
+  `;
+
+  try {
+    const response =
+      await authenticatedFetch(
+        '/api/admin/monitoring/residents'
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        'No fue posible cargar el monitoreo'
+      );
+    }
+
+    currentResidentMonitoring =
+      data.residents || [];
+    
+    detectNewRiskyResidents(
+      currentResidentMonitoring
+    );
+
+    renderResidentMonitoring(
+      currentResidentMonitoring
+    );
+
+    updateResidentMonitoringMetrics(
+      data.metrics || {}
+    );
+
+    filterResidentMonitoring();
+
+  } catch (error) {
+    console.error(
+      'Error cargando monitoreo de residentes:',
+      error
+    );
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center text-danger py-4">
+          ${escapeHtml(
+            error.message ||
+            'No fue posible cargar el monitoreo.'
+          )}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+// ============================================
+// FILTRAR MONITOREO
+// ============================================
+
+function filterResidentMonitoring() {
+  const searchInput =
+    document.getElementById(
+      'monitorSearch'
+    );
+
+  const statusSelect =
+    document.getElementById(
+      'monitorStatusFilter'
+    );
+
+  const noResults =
+    document.getElementById(
+      'monitorNoResults'
+    );
+
+  if (
+    !searchInput ||
+    !statusSelect ||
+    !noResults
+  ) {
+    return;
+  }
+
+  const search =
+    searchInput.value
+      .toLowerCase()
+      .trim();
+
+  const status =
+    statusSelect.value;
+
+  const rows =
+    document.querySelectorAll(
+      '#monitoringBody tr[data-status]'
+    );
+
+  let visible = 0;
+
+  rows.forEach(
+    row => {
+      const matchesSearch =
+        !search ||
+        row.innerText
+          .toLowerCase()
+          .includes(search);
+
+      const matchesStatus =
+        status === 'Todos' ||
+        row.dataset.status ===
+        status;
+
+      row.classList.toggle(
+        'd-none',
+        !(
+          matchesSearch &&
+          matchesStatus
+        )
+      );
+
+      if (
+        matchesSearch &&
+        matchesStatus
+      ) {
+        visible++;
+      }
+    }
+  );
+
+  noResults.classList.toggle(
+    'd-none',
+    visible !== 0 ||
+    rows.length === 0
+  );
+}
+
+// ============================================
+// CARGAR DASHBOARD COMPLETO
 // ============================================
 
 async function loadBillingDashboard() {
@@ -1643,15 +2184,21 @@ async function loadBillingDashboard() {
     loadTransactions(),
     loadSubscriptions(),
     loadCommercialMetrics(),
-    loadAuditLog()
+    loadAuditLog(),
+    loadResidentMonitoring()
   ]);
 }
 
+// ============================================
+// MÉTRICAS COMERCIALES
+// ============================================
+
 async function loadCommercialMetrics() {
   try {
-    const response = await authenticatedFetch(
-      '/api/billing/commercial-metrics'
-    );
+    const response =
+      await authenticatedFetch(
+        '/api/billing/commercial-metrics'
+      );
 
     if (!response.ok) {
       throw new Error(
@@ -1659,16 +2206,21 @@ async function loadCommercialMetrics() {
       );
     }
 
-    const data = await response.json();
-    const metrics = data.metrics;
+    const data =
+      await response.json();
+
+    const metrics =
+      data.metrics;
 
     document.getElementById(
       'commercialTotalAccounts'
-    ).textContent = metrics.total_accounts;
+    ).textContent =
+      metrics.total_accounts;
 
     document.getElementById(
       'commercialPaidSubscriptions'
-    ).textContent = metrics.paid_subscriptions;
+    ).textContent =
+      metrics.paid_subscriptions;
 
     document.getElementById(
       'commercialActiveSubscriptions'
@@ -1678,7 +2230,10 @@ async function loadCommercialMetrics() {
     document.getElementById(
       'commercialMRR'
     ).textContent =
-      formatCurrency(metrics.mrr, 'CLP');
+      formatCurrency(
+        metrics.mrr,
+        'CLP'
+      );
 
     document.getElementById(
       'commercialCanceled'
@@ -1693,11 +2248,38 @@ async function loadCommercialMetrics() {
   }
 }
 
+// ============================================
+// AUDITORÍA
+// ============================================
+
 function auditActionLabel(action) {
   const labels = {
-    subscription_plan_changed: 'Cambio de plan',
-    payment_refunded: 'Reembolso',
-    subscription_canceled: 'Cancelación de suscripción'
+    subscription_plan_changed:
+      'Cambio de plan',
+
+    payment_refunded:
+      'Reembolso',
+
+    subscription_canceled:
+      'Cancelación de suscripción',
+
+    family_group_created:
+      'Núcleo familiar creado',
+
+    resident_created:
+      'Residente creado',
+
+    representative_created:
+      'Representante creado',
+
+    resident_representative_assigned:
+      'Representante asignado',
+
+    caregiver_created:
+      'Cuidador creado',
+
+    caregiver_family_group_assigned:
+      'Cuidador asignado'
   };
 
   return labels[action] || action;
@@ -1705,12 +2287,38 @@ function auditActionLabel(action) {
 
 function auditActionClass(action) {
   const classes = {
-    subscription_plan_changed: 'neutral',
-    payment_refunded: 'warn',
-    subscription_canceled: 'crit'
+    subscription_plan_changed:
+      'neutral',
+
+    payment_refunded:
+      'warn',
+
+    subscription_canceled:
+      'crit',
+
+    family_group_created:
+      'neutral',
+
+    resident_created:
+      'ok',
+
+    representative_created:
+      'neutral',
+
+    resident_representative_assigned:
+      'neutral',
+
+    caregiver_created:
+      'ok',
+
+    caregiver_family_group_assigned:
+      'neutral'
   };
 
-  return classes[action] || 'neutral';
+  return (
+    classes[action] ||
+    'neutral'
+  );
 }
 
 function formatAuditValue(value) {
@@ -1718,7 +2326,9 @@ function formatAuditValue(value) {
     return '—';
   }
 
-  if (typeof value === 'string') {
+  if (
+    typeof value === 'string'
+  ) {
     return value;
   }
 
@@ -1730,51 +2340,74 @@ function formatAuditValue(value) {
   }
 
   return entries
-    .map(([key, val]) => {
-      const labels = {
-        plan_code: 'Plan',
-        status: 'Estado',
-        refunded_amount: 'Reembolsado',
-        cancel_at_period_end: 'Cancelar al fin',
-        canceled_at: 'Cancelado'
-      };
+    .map(
+      ([key, val]) => {
+        const labels = {
+          plan_code: 'Plan',
+          status: 'Estado',
+          refunded_amount:
+            'Reembolsado',
+          cancel_at_period_end:
+            'Cancelar al fin',
+          canceled_at:
+            'Cancelado'
+        };
 
-      const label =
-        labels[key] || key;
+        const label =
+          labels[key] ||
+          key;
 
-      let displayValue = val;
+        let displayValue =
+          val;
 
-      if (
-        key === 'refunded_amount' &&
-        val !== null
-      ) {
-        displayValue =
-          formatCurrency(val, 'CLP');
+        if (
+          key === 'refunded_amount' &&
+          val !== null
+        ) {
+          displayValue =
+            formatCurrency(
+              val,
+              'CLP'
+            );
+        }
+
+        if (
+          key === 'canceled_at' &&
+          val
+        ) {
+          displayValue =
+            formatDateTime(val);
+        }
+
+        if (
+          key === 'cancel_at_period_end'
+        ) {
+          displayValue =
+            val
+              ? 'Sí'
+              : 'No';
+        }
+
+        return (
+          `${label}: ${
+            displayValue ??
+            '—'
+          }`
+        );
       }
-
-      if (
-        key === 'canceled_at' &&
-        val
-      ) {
-        displayValue =
-          formatDateTime(val);
-      }
-
-      if (
-        key === 'cancel_at_period_end'
-      ) {
-        displayValue =
-          val ? 'Sí' : 'No';
-      }
-
-      return `${label}: ${displayValue ?? '—'}`;
-    })
+    )
     .join(' · ');
 }
 
+// ============================================
+// CARGAR AUDITORÍA
+// ============================================
+
 async function loadAuditLog() {
   const tbody =
-    document.getElementById('auditBody');
+    document.getElementById(
+      'auditBody'
+    );
 
   try {
     const response =
@@ -1810,16 +2443,17 @@ async function loadAuditLog() {
 
     tbody.innerHTML = `
       <tr>
-        <td
-          colspan="6"
-          class="text-center text-danger py-4"
-        >
+        <td colspan="6" class="text-center text-danger py-4">
           No fue posible cargar la auditoría.
         </td>
       </tr>
     `;
   }
 }
+
+// ============================================
+// RENDER AUDITORÍA
+// ============================================
 
 function renderAuditLog(entries) {
   const tbody =
@@ -1830,105 +2464,106 @@ function renderAuditLog(entries) {
   if (!entries.length) {
     tbody.innerHTML = `
       <tr>
-        <td
-          colspan="6"
-          class="text-center text-muted py-4"
-        >
+        <td colspan="6" class="text-center text-muted py-4">
           No hay registros de auditoría.
         </td>
       </tr>
     `;
+
     return;
   }
 
   tbody.innerHTML =
-    entries.map(entry => {
+    entries
+      .map(
+        entry => {
+          const actionLabel =
+            auditActionLabel(
+              entry.action
+            );
 
-      const actionLabel =
-        auditActionLabel(
-          entry.action
-        );
+          const actionClass =
+            auditActionClass(
+              entry.action
+            );
 
-      const actionClass =
-        auditActionClass(
-          entry.action
-        );
+          return `
+            <tr data-action="${escapeHtml(entry.action)}">
 
-      return `
-        <tr
-          data-action="${escapeHtml(entry.action)}"
-        >
+              <td>
+                ${formatDateTime(
+                  entry.created_at
+                )}
+              </td>
 
-          <td>
-            ${formatDateTime(entry.created_at)}
-          </td>
+              <td>
+                <div class="fw-semibold">
+                  ${escapeHtml(
+                    entry.actor_name ||
+                    'Sistema'
+                  )}
+                </div>
 
-          <td>
-            <div class="fw-semibold">
-              ${escapeHtml(
-                entry.actor_name ||
-                'Sistema'
-              )}
-            </div>
+                <div class="text-muted" style="font-size:10.5px;">
+                  ${escapeHtml(
+                    formatRole(
+                      entry.actor_role ||
+                      'sin rol'
+                    )
+                  )}
+                </div>
+              </td>
 
-            <div
-              class="text-muted"
-              style="font-size:10.5px;"
-            >
-              ${escapeHtml(
-                formatRole(
-                  entry.actor_role ||
-                  'sin rol'
-                )
-              )}
-            </div>
-          </td>
+              <td>
+                ${escapeHtml(
+                  entry.subject_name ||
+                  'No disponible'
+                )}
+              </td>
 
-          <td>
-            ${escapeHtml(
-              entry.subject_name ||
-              'No disponible'
-            )}
-          </td>
+              <td>
+                <span class="chip ${actionClass}">
+                  ${escapeHtml(
+                    actionLabel
+                  )}
+                </span>
+              </td>
 
-          <td>
-            <span
-              class="chip ${actionClass}"
-            >
-              ${escapeHtml(actionLabel)}
-            </span>
-          </td>
+              <td>
+                <div
+                  class="text-muted"
+                  style="max-width:300px;"
+                >
+                  ${escapeHtml(
+                    formatAuditValue(
+                      entry.before
+                    )
+                  )}
+                </div>
+              </td>
 
-          <td>
-            <div
-              class="text-muted"
-              style="max-width:300px;"
-            >
-              ${escapeHtml(
-                formatAuditValue(
-                  entry.before
-                )
-              )}
-            </div>
-          </td>
+              <td>
+                <div
+                  style="max-width:300px;"
+                >
+                  ${escapeHtml(
+                    formatAuditValue(
+                      entry.after
+                    )
+                  )}
+                </div>
+              </td>
 
-          <td>
-            <div
-              style="max-width:300px;"
-            >
-              ${escapeHtml(
-                formatAuditValue(
-                  entry.after
-                )
-              )}
-            </div>
-          </td>
-
-        </tr>
-      `;
-
-    }).join('');
+            </tr>
+          `;
+        }
+      )
+      .join('');
 }
+
+// ============================================
+// MÉTRICAS AUDITORÍA
+// ============================================
 
 function updateAuditMetrics(entries) {
   document.getElementById(
@@ -1957,6 +2592,10 @@ function updateAuditMetrics(entries) {
     ).length;
 }
 
+// ============================================
+// FILTRAR AUDITORÍA
+// ============================================
+
 function filterAuditLog() {
   const search =
     document
@@ -1981,40 +2620,42 @@ function filterAuditLog() {
 
   let visible = 0;
 
-  rows.forEach(row => {
-    const rowText =
-      row.innerText
-        .toLowerCase();
+  rows.forEach(
+    row => {
+      const rowText =
+        row.innerText
+          .toLowerCase();
 
-    const rowAction =
-      row.getAttribute(
-        'data-action'
-      );
+      const rowAction =
+        row.getAttribute(
+          'data-action'
+        );
 
-    const matchesSearch =
-      search === '' ||
-      rowText.includes(search);
+      const matchesSearch =
+        search === '' ||
+        rowText.includes(search);
 
-    const matchesAction =
-      action === 'Todos' ||
-      rowAction === action;
+      const matchesAction =
+        action === 'Todos' ||
+        rowAction === action;
 
-    if (
-      matchesSearch &&
-      matchesAction
-    ) {
-      row.classList.remove(
-        'd-none'
-      );
+      if (
+        matchesSearch &&
+        matchesAction
+      ) {
+        row.classList.remove(
+          'd-none'
+        );
 
-      visible++;
+        visible++;
 
-    } else {
-      row.classList.add(
-        'd-none'
-      );
+      } else {
+        row.classList.add(
+          'd-none'
+        );
+      }
     }
-  });
+  );
 
   document.getElementById(
     'auditNoResults'
@@ -2024,10 +2665,15 @@ function filterAuditLog() {
   );
 }
 
-
+// ============================================
+// INTERFAZ POR ROL
+// ============================================
 
 function applyRoleInterface() {
-  const envBadge = document.querySelector('.env-badge');
+  const envBadge =
+    document.querySelector(
+      '.env-badge'
+    );
 
   if (!envBadge) {
     return;
@@ -2046,18 +2692,15 @@ function applyRoleInterface() {
   }
 }
 
+// ============================================
+// PROTECCIÓN DEL PORTAL ADMINISTRATIVO
+// ============================================
 
 function protectAdministrativePortal(user) {
-
-  // ==========================================
-  // CAREGIVER
-  // ==========================================
-
   if (
     user.user_type === 'app' &&
     user.role_code === 'caregiver'
   ) {
-
     window.location.replace(
       '/caregiver.html'
     );
@@ -2065,16 +2708,10 @@ function protectAdministrativePortal(user) {
     return false;
   }
 
-
-  // ==========================================
-  // SOLO ADMIN Y ANALYST
-  // ==========================================
-
   const administrativeRoles = [
     'admin',
     'analyst'
   ];
-
 
   if (
     user.user_type !== 'admin' ||
@@ -2082,7 +2719,6 @@ function protectAdministrativePortal(user) {
       user.role_code
     )
   ) {
-
     sessionStorage.removeItem(
       'agecare_token'
     );
@@ -2096,18 +2732,196 @@ function protectAdministrativePortal(user) {
     return false;
   }
 
-
   return true;
+}
 
+
+// ============================================
+// MONITOREO AUTOMÁTICO DE RESIDENTES
+// ============================================
+
+let residentMonitoringInterval = null;
+let residentMonitoringRequestRunning = false;
+
+function startResidentMonitoringAutoRefresh() {
+  if (residentMonitoringInterval) {
+    return;
+  }
+
+  residentMonitoringInterval = setInterval(
+    async () => {
+      const monitoringView = document.getElementById('view-monitoreo');
+
+      // Solo consultamos si el usuario está viendo
+      // actualmente el módulo de monitoreo.
+      if (
+        !monitoringView ||
+        !monitoringView.classList.contains('active')
+      ) {
+        return;
+      }
+
+      // Evita que una petición se solape con otra.
+      if (residentMonitoringRequestRunning) {
+        return;
+      }
+
+      residentMonitoringRequestRunning = true;
+
+      try {
+        await refreshResidentMonitoringSilently();
+
+      } catch (error) {
+        console.error(
+          'Error actualizando monitoreo automáticamente:',
+          error
+        );
+
+      } finally {
+        residentMonitoringRequestRunning = false;
+      }
+
+    },
+    5000
+  );
+}
+
+// ============================================
+// DETECTAR NUEVOS ESTADOS RIESGOSOS
+// ============================================
+
+function detectNewRiskyResidents(residents) {
+  if (!monitoringBaselineReady) {
+    residents.forEach(resident => {
+      previousResidentStatuses.set(
+        resident.id,
+        resident.status_code || 'SIN_REGISTRAR'
+      );
+    });
+
+    monitoringBaselineReady = true;
+    return;
+  }
+
+  residents.forEach(resident => {
+    const currentStatus =
+      resident.status_code || 'SIN_REGISTRAR';
+
+    const previousStatus =
+      previousResidentStatuses.get(resident.id);
+
+    if (
+      previousStatus &&
+      previousStatus !== 'RIESGOSO' &&
+      currentStatus === 'RIESGOSO'
+    ) {
+      showRiskyResidentAlert(resident);
+    }
+
+    previousResidentStatuses.set(
+      resident.id,
+      currentStatus
+    );
+  });
+}
+
+// ============================================
+// ALERTA VISUAL DE RESIDENTE RIESGOSO
+// ============================================
+
+function showRiskyResidentAlert(resident) {
+  const residentName = [
+    resident.first_name,
+    resident.first_last_name,
+    resident.second_last_name
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const toastEl =
+    document.getElementById('toastNotification');
+
+  const toastBody =
+    document.getElementById('toastMessage');
+
+  toastBody.innerHTML = `
+    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+
+    <div>
+      <div class="fw-bold text-danger">
+        Estado riesgoso detectado
+      </div>
+
+      <div class="small">
+        ${escapeHtml(residentName)}
+      </div>
+
+      ${
+        resident.observation
+          ? `
+            <div class="small text-white-50 mt-1">
+              ${escapeHtml(resident.observation)}
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+
+  const toast =
+    bootstrap.Toast.getOrCreateInstance(
+      toastEl,
+      {
+        delay: 7000
+      }
+    );
+
+  toast.show();
 }
 
 
 
 
+// ============================================
+// ACTUALIZACIÓN SILENCIOSA
+// ============================================
+
+async function refreshResidentMonitoringSilently() {
+  const response = await authenticatedFetch(
+    '/api/admin/monitoring/residents'
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+      'No fue posible actualizar el monitoreo'
+    );
+  }
+
+  currentResidentMonitoring =
+    data.residents || [];
+
+  detectNewRiskyResidents(
+    currentResidentMonitoring
+  );
+
+  renderResidentMonitoring(
+    currentResidentMonitoring
+  );
+
+  updateResidentMonitoringMetrics(
+    data.metrics || {}
+  );
+
+  filterResidentMonitoring();
+}
 
 
 
-  // ============================================
-  // INICIAR
-  // ============================================
-  validateSession();
+// ============================================
+// INICIAR
+// ============================================
+
+validateSession();
