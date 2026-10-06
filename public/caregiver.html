@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AgeCare · Portal del Cuidador</title>
+    <link rel="icon" type="image/jpeg" href="/img/logoAgecare.jpg">
+
+    <!-- Bootstrap 5 -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --surface: #ffffff;
+            --ink: #1f2733;
+            --ink-soft: #667085;
+            --line: #e4e8ee;
+            --brand: #3b6fd4;
+            --brand-dark: #2b55a8;
+            --sidebar: #141b26;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+        }
+
+        /* ==========================================
+           NAVBAR
+        ========================================== */
+
+        .topbar {
+            background: var(--sidebar);
+            min-height: 72px;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: var(--brand);
+            color: white;
+            font-weight: 800;
+            font-size: 19px;
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+        }
+
+        /* ==========================================
+           CONTENIDO
+        ========================================== */
+
+        .page-container {
+            max-width: 1200px;
+        }
+
+        .page-title {
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+
+        .page-description {
+            color: var(--ink-soft);
+        }
+
+        /* ==========================================
+           RESIDENTES
+        ========================================== */
+
+        .resident-card {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--surface);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+        .resident-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(31, 39, 51, 0.08);
+        }
+
+        .resident-avatar {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e7eefb;
+            color: var(--brand);
+            font-size: 23px;
+        }
+
+        .resident-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .resident-detail {
+            color: var(--ink-soft);
+            font-size: 0.88rem;
+        }
+
+        .family-badge {
+            background: #eef3fc;
+            color: #315fae;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #e8f6ef;
+            color: #157347;
+            font-weight: 600;
+        }
+
+        .btn-view {
+            border-color: var(--brand);
+            color: var(--brand);
+        }
+
+        .btn-view:hover {
+            background: var(--brand);
+            color: white;
+        }
+
+        /* ==========================================
+           ESTADOS GENERALES
+        ========================================== */
+
+        .loading-container {
+            min-height: 300px;
+        }
+
+        .empty-container {
+            border: 1px dashed #ccd3dc;
+            border-radius: 16px;
+            background: white;
+        }
+
+        /* ==========================================
+           MODAL FICHA RESIDENTE
+        ========================================== */
+
+        .resident-modal-header {
+            background: #fbfcfe;
+        }
+
+        .resident-info-card {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px 16px;
+            height: 100%;
+            background: #fff;
+        }
+
+        .resident-info-label {
+            color: var(--ink-soft);
+            font-size: 0.78rem;
+            margin-bottom: 3px;
+        }
+
+        .resident-info-value {
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .health-notes-box {
+            background: #f7f8fa;
+            border: 1px solid #eceff3;
+            border-radius: 12px;
+            padding: 16px;
+            white-space: pre-wrap;
+        }
+
+        .status-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .status-option {
+            min-height: 52px;
+            border: 2px solid #e4e8ee;
+            border-radius: 12px;
+            background: white;
+            font-weight: 700;
+            transition: all .15s ease;
+        }
+
+        .status-option:hover {
+            transform: translateY(-1px);
+        }
+
+        .status-option.selected-normal {
+            border-color: #198754;
+            background: #e8f6ef;
+            color: #157347;
+        }
+
+        .status-option.selected-alerta {
+            border-color: #f0ad00;
+            background: #fff7dd;
+            color: #946c00;
+        }
+
+        .status-option.selected-riesgoso {
+            border-color: #dc3545;
+            background: #fdebec;
+            color: #b02a37;
+        }
+
+        .current-status-box {
+            border-radius: 14px;
+            padding: 18px;
+            border: 1px solid var(--line);
+        }
+
+        .current-status-normal {
+            background: #e8f6ef;
+            border-color: #b9e3cc;
+        }
+
+        .current-status-alerta {
+            background: #fff7dd;
+            border-color: #f6df91;
+        }
+
+        .current-status-riesgoso {
+            background: #fdebec;
+            border-color: #efbec3;
+        }
+
+        .current-status-none {
+            background: #f5f6f8;
+        }
+
+        .current-status-meta {
+            font-size: 0.8rem;
+            color: var(--ink-soft);
+        }
+
+        .history-list {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 0 16px;
+            background: white;
+        }
+
+        .history-item {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .history-item:last-child {
+            border-bottom: 0;
+        }
+
+        .history-status {
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .history-normal {
+            color: #157347;
+        }
+
+        .history-alerta {
+            color: #946c00;
+        }
+
+        .history-riesgoso {
+            color: #b02a37;
+        }
+
+        @media (max-width: 575.98px) {
+            .status-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                min-height: 66px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ================================================= -->
+<!-- NAVBAR -->
+<!-- ================================================= -->
+
+<nav class="navbar navbar-dark topbar">
+    <div class="container-fluid page-container px-3 px-md-4">
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="brand-logo">A</div>
+
+            <div>
+                <div class="fw-bold text-white">AgeCare</div>
+                <div class="small text-white-50">Portal del Cuidador</div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-none d-sm-block text-end">
+                <div
+                    class="text-white small fw-semibold"
+                    id="topCaregiverName"
+                >
+                    Cargando...
+                </div>
+
+                <div
+                    class="text-white-50"
+                    style="font-size: 12px;"
+                >
+                    Cuidador
+                </div>
+            </div>
+
+            <div class="user-avatar">
+                <i class="bi bi-person-fill"></i>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-outline-light btn-sm"
+                id="logoutButton"
+            >
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="d-none d-md-inline ms-1">Salir</span>
+            </button>
+        </div>
+
+    </div>
+</nav>
+
+<!-- ================================================= -->
+<!-- CONTENIDO -->
+<!-- ================================================= -->
+
+<main class="container-fluid page-container px-3 px-md-4 py-4 py-md-5">
+
+    <!-- BIENVENIDA -->
+    <div class="mb-5">
+        <div class="text-uppercase text-primary fw-semibold small mb-2">
+            Panel de atención
+        </div>
+
+        <h1 class="page-title h2 mb-2" id="welcomeTitle">
+            Bienvenido
+        </h1>
+
+        <p class="page-description mb-0">
+            Consulta los residentes que tienes actualmente asignados en AgeCare.
+        </p>
+    </div>
+
+    <!-- CABECERA RESIDENTES -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="h5 fw-bold mb-1">Mis residentes</h2>
+
+            <div class="text-muted small" id="residentCount">
+                Cargando residentes...
+            </div>
+        </div>
+    </div>
+
+    <!-- LOADER -->
+    <div
+        id="residentsLoader"
+        class="loading-container d-flex flex-column align-items-center justify-content-center"
+    >
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+
+        <div class="text-muted">Cargando tus residentes...</div>
+    </div>
+
+    <!-- ERROR -->
+    <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <span id="errorMessage">No fue posible cargar los residentes.</span>
+    </div>
+
+    <!-- SIN RESIDENTES -->
+    <div
+        id="emptyResidents"
+        class="empty-container text-center p-5 d-none"
+    >
+        <i
+            class="bi bi-people text-muted"
+            style="font-size: 42px;"
+        ></i>
+
+        <h3 class="h5 fw-bold mt-3">No tienes residentes asignados</h3>
+
+        <p class="text-muted mb-0">
+            Cuando un administrador te asigne un núcleo familiar,
+            sus residentes aparecerán aquí.
+        </p>
+    </div>
+
+    <!-- GRID RESIDENTES -->
+    <div id="residentsGrid" class="row g-3"></div>
+
+</main>
+
+<!-- ================================================= -->
+<!-- MODAL FICHA RESIDENTE -->
+<!-- ================================================= -->
+
+<div
+    class="modal fade"
+    id="residentModal"
+    tabindex="-1"
+    aria-labelledby="residentModalLabel"
+    aria-hidden="true"
+>
+    <div
+        class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"
+    >
+        <div class="modal-content border-0 rounded-4 shadow">
+
+            <!-- HEADER -->
+            <div class="modal-header resident-modal-header border-bottom px-4 py-3">
+                <div>
+                    <div class="text-primary small fw-semibold mb-1">
+                        FICHA DEL RESIDENTE
+                    </div>
+
+                    <h2
+                        class="modal-title h5 fw-bold mb-0"
+                        id="residentModalLabel"
+                    >
+                        <span id="modalResidentName">Cargando...</span>
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar"
+                ></button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body p-4">
+
+                <!-- LOADER -->
+                <div id="residentModalLoader" class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="text-muted">Cargando ficha...</div>
+                </div>
+
+                <!-- ERROR DE CARGA -->
+                <div
+                    id="residentModalLoadError"
+                    class="alert alert-danger d-none"
+                    role="alert"
+                ></div>
+
+                <!-- CONTENIDO -->
+                <div id="residentModalContent" class="d-none">
+
+                    <!-- DATOS GENERALES -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="resident-info-card">
+                                <div class="resident-info-label">RUN</div>
+                                <div class="resident-info-value" id="modalResidentRun">-</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="resident-info-card">
+                                <div class="resident-info-label">Edad</div>
+                                <div class="resident-info-value" id="modalResidentAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="resident-info-card">
+                                <div class="resident-info-label">Núcleo familiar</div>
+                                <div class="resident-info-value" id="modalResidentFamily">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INFORMACIÓN DE SALUD -->
+                    <div class="mb-4">
+                        <h3 class="h6 fw-bold mb-2">
+                            Información general de salud
+                        </h3>
+
+                        <div class="health-notes-box text-muted" id="modalHealthNotes">
+                            Sin observaciones generales registradas.
+                        </div>
+                    </div>
+
+                    <!-- ESTADO ACTUAL -->
+                    <div class="mb-4">
+                        <h3 class="h6 fw-bold mb-3">Estado actual</h3>
+
+                        <div
+                            id="currentStatusBox"
+                            class="current-status-box current-status-none"
+                        >
+                            <div
+                                class="fw-bold fs-5"
+                                id="currentStatusCode"
+                            >
+                                Sin registrar
+                            </div>
+
+                            <div
+                                class="current-status-meta mt-1"
+                                id="currentStatusDate"
+                            ></div>
+
+                            <div
+                                class="current-status-meta mt-1"
+                                id="currentStatusCaregiver"
+                            ></div>
+
+                            <div class="mt-3" id="currentStatusObservation">
+                                El cuidador aún no registra un estado.
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- REGISTRAR ESTADO -->
+                    <div class="mb-4">
+                        <h3 class="h6 fw-bold mb-1">
+                            Registrar nuevo estado
+                        </h3>
+
+                        <p class="text-muted small mb-3">
+                            Selecciona el estado actual del residente.
+                        </p>
+
+                        <div class="status-selector" id="statusSelector">
+                            <button
+                                type="button"
+                                class="status-option"
+                                data-status="NORMAL"
+                            >
+                                <i class="bi bi-check-circle me-1"></i>
+                                NORMAL
+                            </button>
+
+                            <button
+                                type="button"
+                                class="status-option"
+                                data-status="ALERTA"
+                            >
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                ALERTA
+                            </button>
+
+                            <button
+                                type="button"
+                                class="status-option"
+                                data-status="RIESGOSO"
+                            >
+                                <i class="bi bi-exclamation-octagon me-1"></i>
+                                RIESGOSO
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- OBSERVACIÓN -->
+                    <div class="mb-4">
+                        <label
+                            for="statusObservation"
+                            class="form-label fw-semibold"
+                        >
+                            Observación
+                        </label>
+
+                        <textarea
+                            id="statusObservation"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1000"
+                            placeholder="Ej: Residente estable, presión normal y sin molestias."
+                        ></textarea>
+
+                        <div class="form-text">Máximo 1000 caracteres.</div>
+                    </div>
+
+                    <!-- RESULTADOS DEL GUARDADO -->
+                    <div
+                        id="statusSuccess"
+                        class="alert alert-success d-none"
+                        role="alert"
+                    ></div>
+
+                    <div
+                        id="statusError"
+                        class="alert alert-danger d-none"
+                        role="alert"
+                    ></div>
+
+                    <!-- GUARDAR -->
+                    <button
+                        type="button"
+                        class="btn btn-primary w-100"
+                        id="saveStatusButton"
+                    >
+                        <span id="saveStatusText">Guardar estado</span>
+                        <span
+                            id="saveStatusSpinner"
+                            class="spinner-border spinner-border-sm ms-2 d-none"
+                            aria-hidden="true"
+                        ></span>
+                    </button>
+
+                    <hr class="my-4">
+
+                    <!-- HISTORIAL -->
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="h6 fw-bold mb-0">Historial reciente</h3>
+                            <span class="text-muted small">Últimos 10 registros</span>
+                        </div>
+
+                        <div id="statusHistory"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap -->
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+<script>
+    // ==================================================
+    // SESIÓN Y ELEMENTOS PRINCIPALES
+    // ==================================================
+
+    const token = sessionStorage.getItem('agecare_token');
+
+    const residentsGrid = document.getElementById('residentsGrid');
+    const residentsLoader = document.getElementById('residentsLoader');
+    const emptyResidents = document.getElementById('emptyResidents');
+    const residentCount = document.getElementById('residentCount');
+    const welcomeTitle = document.getElementById('welcomeTitle');
+    const topCaregiverName = document.getElementById('topCaregiverName');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // ==================================================
+    // MODAL
+    // ==================================================
+
+    const residentModalElement = document.getElementById('residentModal');
+    const residentModal = new bootstrap.Modal(residentModalElement);
+
+    let selectedResidentId = null;
+    let selectedStatus = null;
+
+    // ==================================================
+    // SEGURIDAD / SESIÓN
+    // ==================================================
+
+    function redirectToLogin() {
+        sessionStorage.removeItem('agecare_token');
+        sessionStorage.removeItem('agecare_user');
+        window.location.replace('/');
+    }
+
+    function logout() {
+        sessionStorage.removeItem('agecare_token');
+        sessionStorage.removeItem('agecare_user');
+        window.location.replace('/');
+    }
+
+    document
+        .getElementById('logoutButton')
+        .addEventListener('click', logout);
+
+    // ==================================================
+    // UTILIDADES
+    // ==================================================
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function calculateAge(birthDate) {
+        if (!birthDate) {
+            return null;
+        }
+
+        const birth = new Date(birthDate);
+
+        if (Number.isNaN(birth.getTime())) {
+            return null;
+        }
+
+        const today = new Date();
+
+        let age = today.getFullYear() - birth.getFullYear();
+
+        const monthDifference = today.getMonth() - birth.getMonth();
+
+        if (
+            monthDifference < 0 ||
+            (
+                monthDifference === 0 &&
+                today.getDate() < birth.getDate()
+            )
+        ) {
+            age--;
+        }
+
+        return age;
+    }
+
+    function getResidentFullName(resident) {
+        return [
+            resident.first_name,
+            resident.first_last_name,
+            resident.second_last_name
+        ]
+            .filter(Boolean)
+            .join(' ');
+    }
+
+    function formatDateTime(dateValue) {
+        if (!dateValue) {
+            return '-';
+        }
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) {
+            return '-';
+        }
+
+        return date.toLocaleString('es-CL', {
+            dateStyle: 'short',
+            timeStyle: 'short'
+        });
+    }
+
+    // ==================================================
+    // SELECCIÓN DE ESTADO
+    // ==================================================
+
+    function clearStatusSelection() {
+        selectedStatus = null;
+
+        document
+            .querySelectorAll('.status-option')
+            .forEach(button => {
+                button.classList.remove(
+                    'selected-normal',
+                    'selected-alerta',
+                    'selected-riesgoso'
+                );
+            });
+    }
+
+    function selectStatus(status) {
+        clearStatusSelection();
+
+        selectedStatus = status;
+
+        const button = document.querySelector(
+            `[data-status="${status}"]`
+        );
+
+        if (!button) {
+            return;
+        }
+
+        if (status === 'NORMAL') {
+            button.classList.add('selected-normal');
+        }
+
+        if (status === 'ALERTA') {
+            button.classList.add('selected-alerta');
+        }
+
+        if (status === 'RIESGOSO') {
+            button.classList.add('selected-riesgoso');
+        }
+    }
+
+    document
+        .querySelectorAll('.status-option')
+        .forEach(button => {
+            button.addEventListener('click', () => {
+                selectStatus(button.dataset.status);
+
+                document
+                    .getElementById('statusError')
+                    .classList.add('d-none');
+
+                document
+                    .getElementById('statusSuccess')
+                    .classList.add('d-none');
+            });
+        });
+
+    // ==================================================
+    // RENDER ESTADO ACTUAL
+    // ==================================================
+
+    function renderCurrentStatus(currentStatus) {
+        const box = document.getElementById('currentStatusBox');
+        const code = document.getElementById('currentStatusCode');
+        const date = document.getElementById('currentStatusDate');
+        const caregiver = document.getElementById('currentStatusCaregiver');
+        const observation = document.getElementById('currentStatusObservation');
+
+        box.className = 'current-status-box';
+
+        if (!currentStatus) {
+            box.classList.add('current-status-none');
+            code.textContent = 'Sin registrar';
+            date.textContent = '';
+            caregiver.textContent = '';
+            observation.textContent = 'El cuidador aún no registra un estado.';
+            return;
+        }
+
+        code.textContent = currentStatus.status_code;
+        date.textContent = `Actualizado: ${formatDateTime(currentStatus.updated_at)}`;
+
+        const caregiverName = [
+            currentStatus.caregiver_first_name,
+            currentStatus.caregiver_last_name
+        ]
+            .filter(Boolean)
+            .join(' ');
+
+        caregiver.textContent = caregiverName
+            ? `Registrado por: ${caregiverName}`
+            : '';
+
+        observation.textContent =
+            currentStatus.observation || 'Sin observaciones.';
+
+        if (currentStatus.status_code === 'NORMAL') {
+            box.classList.add('current-status-normal');
+        }
+
+        if (currentStatus.status_code === 'ALERTA') {
+            box.classList.add('current-status-alerta');
+        }
+
+        if (currentStatus.status_code === 'RIESGOSO') {
+            box.classList.add('current-status-riesgoso');
+        }
+    }
+
+    // ==================================================
+    // RENDER HISTORIAL
+    // ==================================================
+
+    function renderStatusHistory(history) {
+        const container = document.getElementById('statusHistory');
+        container.innerHTML = '';
+
+        if (!history || history.length === 0) {
+            container.innerHTML = `
+                <div class="text-muted small border rounded-3 p-3">
+                    Todavía no existen registros de estado.
+                </div>
+            `;
+            return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'history-list';
+
+        history.forEach(item => {
+            let statusClass = '';
+
+            if (item.status_code === 'NORMAL') {
+                statusClass = 'history-normal';
+            }
+
+            if (item.status_code === 'ALERTA') {
+                statusClass = 'history-alerta';
+            }
+
+            if (item.status_code === 'RIESGOSO') {
+                statusClass = 'history-riesgoso';
+            }
+
+            const caregiverName = [
+                item.caregiver_first_name,
+                item.caregiver_last_name
+            ]
+                .filter(Boolean)
+                .join(' ');
+
+            const element = document.createElement('div');
+            element.className = 'history-item';
+
+            element.innerHTML = `
+                <div class="d-flex justify-content-between gap-3 flex-column flex-sm-row">
+                    <div>
+                        <div class="history-status ${statusClass}">
+                            ${escapeHtml(item.status_code)}
+                        </div>
+
+                        <div class="small mt-1">
+                            ${escapeHtml(item.observation || 'Sin observaciones.')}
+                        </div>
+
+                        <div class="text-muted small mt-1">
+                            Registrado por ${escapeHtml(caregiverName || 'Cuidador')}
+                        </div>
+                    </div>
+
+                    <div class="text-muted small text-sm-end flex-shrink-0">
+                        ${escapeHtml(formatDateTime(item.created_at))}
+                    </div>
+                </div>
+            `;
+
+            list.appendChild(element);
+        });
+
+        container.appendChild(list);
+    }
+
+    // ==================================================
+    // CARGAR FICHA DEL RESIDENTE
+    // ==================================================
+
+    async function loadResidentDetail(residentId, options = {}) {
+        const {
+            resetForm = false,
+            showLoader = true
+        } = options;
+
+        const modalLoader = document.getElementById('residentModalLoader');
+        const modalContent = document.getElementById('residentModalContent');
+        const modalLoadError = document.getElementById('residentModalLoadError');
+
+        modalLoadError.classList.add('d-none');
+        modalLoadError.textContent = '';
+
+        if (showLoader) {
+            modalLoader.classList.remove('d-none');
+            modalContent.classList.add('d-none');
+        }
+
+        try {
+            const response = await fetch(
+                `/api/caregiver/residents/${residentId}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || 'No fue posible cargar la ficha.'
+                );
+            }
+
+            const resident = data.resident;
+            const fullName = getResidentFullName(resident);
+            const age = calculateAge(resident.birth_date);
+
+            document.getElementById('modalResidentName').textContent =
+                fullName || 'Residente';
+
+            document.getElementById('modalResidentRun').textContent =
+                `${resident.run_number}-${resident.check_digit}`;
+
+            document.getElementById('modalResidentAge').textContent =
+                age !== null ? `${age} años` : 'No registrada';
+
+            document.getElementById('modalResidentFamily').textContent =
+                resident.family_group_name || 'Sin núcleo';
+
+            document.getElementById('modalHealthNotes').textContent =
+                resident.health_notes ||
+                'Sin observaciones generales registradas.';
+
+            renderCurrentStatus(data.current_status);
+            renderStatusHistory(data.status_history);
+
+            if (resetForm) {
+                document.getElementById('statusObservation').value = '';
+            }
+
+            clearStatusSelection();
+
+            if (data.current_status?.status_code) {
+                selectStatus(data.current_status.status_code);
+            }
+
+            modalContent.classList.remove('d-none');
+
+            return data;
+
+        } catch (error) {
+            console.error('Error cargando ficha:', error);
+
+            modalLoadError.textContent =
+                error.message || 'No fue posible cargar la ficha.';
+
+            modalLoadError.classList.remove('d-none');
+            modalContent.classList.add('d-none');
+
+            throw error;
+
+        } finally {
+            modalLoader.classList.add('d-none');
+        }
+    }
+
+    // ==================================================
+    // ABRIR FICHA
+    // ==================================================
+
+    async function openResidentModal(residentId) {
+        selectedResidentId = residentId;
+        selectedStatus = null;
+
+        document.getElementById('modalResidentName').textContent =
+            'Cargando...';
+
+        document.getElementById('statusObservation').value = '';
+
+        document.getElementById('statusError').classList.add('d-none');
+        document.getElementById('statusSuccess').classList.add('d-none');
+        document.getElementById('residentModalLoadError').classList.add('d-none');
+
+        clearStatusSelection();
+
+        residentModal.show();
+
+        try {
+            await loadResidentDetail(residentId, {
+                resetForm: true,
+                showLoader: true
+            });
+        } catch (error) {
+            // El mensaje ya se muestra dentro del modal.
+        }
+    }
+
+    // ==================================================
+    // GUARDAR ESTADO
+    // ==================================================
+
+    async function saveResidentStatus() {
+        if (!selectedResidentId) {
+            return;
+        }
+
+        const errorBox = document.getElementById('statusError');
+        const successBox = document.getElementById('statusSuccess');
+        const observationInput = document.getElementById('statusObservation');
+        const button = document.getElementById('saveStatusButton');
+        const text = document.getElementById('saveStatusText');
+        const spinner = document.getElementById('saveStatusSpinner');
+
+        errorBox.classList.add('d-none');
+        successBox.classList.add('d-none');
+
+        if (!selectedStatus) {
+            errorBox.textContent = 'Debes seleccionar un estado.';
+            errorBox.classList.remove('d-none');
+            return;
+        }
+
+        const observation = observationInput.value.trim();
+
+        if (observation.length > 1000) {
+            errorBox.textContent =
+                'La observación no puede superar los 1000 caracteres.';
+            errorBox.classList.remove('d-none');
+            return;
+        }
+
+        button.disabled = true;
+        text.textContent = 'Guardando...';
+        spinner.classList.remove('d-none');
+
+        try {
+            const response = await fetch(
+                `/api/caregiver/residents/${selectedResidentId}/status`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        status_code: selectedStatus,
+                        observation: observation || null
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || 'No fue posible actualizar el estado.'
+                );
+            }
+
+            await loadResidentDetail(selectedResidentId, {
+                resetForm: true,
+                showLoader: false
+            });
+
+            successBox.textContent =
+                data.message || 'Estado actualizado correctamente.';
+
+            successBox.classList.remove('d-none');
+
+        } catch (error) {
+            console.error('Error guardando estado:', error);
+
+            errorBox.textContent =
+                error.message || 'No fue posible guardar el estado.';
+
+            errorBox.classList.remove('d-none');
+
+        } finally {
+            button.disabled = false;
+            text.textContent = 'Guardar estado';
+            spinner.classList.add('d-none');
+        }
+    }
+
+    document
+        .getElementById('saveStatusButton')
+        .addEventListener('click', saveResidentStatus);
+
+    // Al cerrar el modal limpiamos la selección local.
+    residentModalElement.addEventListener('hidden.bs.modal', () => {
+        selectedResidentId = null;
+        selectedStatus = null;
+        clearStatusSelection();
+
+        document.getElementById('statusObservation').value = '';
+        document.getElementById('statusError').classList.add('d-none');
+        document.getElementById('statusSuccess').classList.add('d-none');
+    });
+
+    // ==================================================
+    // CREAR TARJETA DE RESIDENTE
+    // ==================================================
+
+    function createResidentCard(resident) {
+        const fullName = getResidentFullName(resident);
+        const age = calculateAge(resident.birth_date);
+
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6 col-xl-4';
+
+        col.innerHTML = `
+            <article class="resident-card h-100 p-4">
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="resident-avatar flex-shrink-0">
+                        <i class="bi bi-person-heart"></i>
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <div class="resident-name">
+                            ${escapeHtml(fullName)}
+                        </div>
+
+                        <div class="resident-detail mt-1">
+                            ${
+                                age !== null
+                                    ? `${escapeHtml(age)} años`
+                                    : 'Edad no registrada'
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2 mb-4">
+                    <div>
+                        <span class="badge family-badge">
+                            <i class="bi bi-people me-1"></i>
+                            ${escapeHtml(resident.family_group_name || 'Sin núcleo')}
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="badge status-active">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Residente activo
+                        </span>
+                    </div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <div class="resident-detail mb-1">
+                        <i class="bi bi-person-vcard me-1"></i>
+                        RUN: ${escapeHtml(resident.run_number)}-${escapeHtml(resident.check_digit)}
+                    </div>
+
+                    <div class="resident-detail">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        En atención AgeCare
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-primary btn-view w-100 mt-4"
+                    data-resident-id="${escapeHtml(resident.id)}"
+                >
+                    <i class="bi bi-person-lines-fill me-1"></i>
+                    Ver ficha
+                </button>
+            </article>
+        `;
+
+        const button = col.querySelector('[data-resident-id]');
+
+        button.addEventListener('click', () => {
+            openResidentModal(resident.id);
+        });
+
+        return col;
+    }
+
+    // ==================================================
+    // CARGAR MIS RESIDENTES
+    // ==================================================
+
+    async function loadMyResidents() {
+        try {
+            residentsLoader.classList.remove('d-none');
+            errorAlert.classList.add('d-none');
+
+            const response = await fetch(
+                '/api/caregiver/me/residents',
+                {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || 'No fue posible obtener los residentes.'
+                );
+            }
+
+            welcomeTitle.textContent =
+                `Hola, ${data.caregiver.full_name}`;
+
+            topCaregiverName.textContent =
+                data.caregiver.full_name;
+
+            residentCount.textContent =
+                data.total === 1
+                    ? '1 residente asignado'
+                    : `${data.total} residentes asignados`;
+
+            residentsGrid.innerHTML = '';
+
+            if (!data.residents || data.residents.length === 0) {
+                emptyResidents.classList.remove('d-none');
+                return;
+            }
+
+            emptyResidents.classList.add('d-none');
+
+            data.residents.forEach(resident => {
+                residentsGrid.appendChild(
+                    createResidentCard(resident)
+                );
+            });
+
+        } catch (error) {
+            console.error('Error cargando residentes:', error);
+
+            errorMessage.textContent =
+                error.message || 'No fue posible cargar los residentes.';
+
+            errorAlert.classList.remove('d-none');
+
+        } finally {
+            residentsLoader.classList.add('d-none');
+        }
+    }
+
+    // ==================================================
+    // VALIDAR SESIÓN
+    // ==================================================
+
+    async function validateSession() {
+        if (!token) {
+            redirectToLogin();
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                redirectToLogin();
+                return;
+            }
+
+            const data = await response.json();
+            const user = data.user || data;
+
+            // SOLO CAREGIVER PUEDE USAR ESTE PORTAL
+            if (
+                user.user_type !== 'app' ||
+                user.role_code !== 'caregiver'
+            ) {
+                if (user.user_type === 'admin') {
+                    window.location.replace('/dashboard.html');
+                    return;
+                }
+
+                redirectToLogin();
+                return;
+            }
+
+            await loadMyResidents();
+
+        } catch (error) {
+            console.error('Error validando sesión:', error);
+            redirectToLogin();
+        }
+    }
+
+    validateSession();
+</script>
+
+</body>
+</html>

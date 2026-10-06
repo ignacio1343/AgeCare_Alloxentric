@@ -9,31 +9,17 @@ const requireRoles = require('../middleware/roleMiddleware');
 // ADMIN + ANALYST
 // ======================================================
 
-router.get(
-    '/',
-    verifyToken,
-    requireRoles('admin', 'analyst'),
-    caregiverController.getCaregivers
-);
+router.get('/',verifyToken,requireRoles('admin', 'analyst'),caregiverController.getCaregivers);
 
 
 // ======================================================
 // SOLO ADMIN
 // ======================================================
 
-router.post(
-    '/',
-    verifyToken,
-    requireRoles('admin'),
-    caregiverController.createCaregiver
-);
+router.post('/',verifyToken,requireRoles('admin'),caregiverController.createCaregiver);
 
 router.post(
-    '/:id/family-groups',
-    verifyToken,
-    requireRoles('admin'),
-    caregiverController.assignFamilyGroup
-);
+    '/:id/family-groups',verifyToken,requireRoles('admin'),caregiverController.assignFamilyGroup);
 
 
 module.exports = router;
