@@ -8,7 +8,7 @@ const auditRoutes = require('./src/routes/auditRoutes');
 const residentRoutes = require('./src/routes/residentRoutes');
 const representativeRoutes = require('./src/routes/representativeRoutes');
 const caregiverRoutes = require('./src/routes/caregiverRoutes');
-
+const caregiverPortalRoutes = require('./src/routes/caregiverPortalRoutes');
 
 const app = express();
 app.use(express.json());
@@ -20,6 +20,10 @@ app.use('/api/family-groups',familyGroupRoutes);
 app.use('/api/residents',residentRoutes);
 app.use('/api/representatives',representativeRoutes);
 app.use('/api/caregivers',caregiverRoutes);
+app.use('/api/caregiver',caregiverPortalRoutes);
+
+
+
 
 const publicPath =path.join(__dirname, 'public');
 

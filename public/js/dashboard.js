@@ -34,12 +34,15 @@ function isAnalyst() {
   // ============================================
 
 async function validateSession() {
+
   if (!token) {
     redirectToLogin();
     return;
   }
 
+
   try {
+
     const response =
       await fetch('/api/auth/me', {
         method: 'GET',
@@ -50,43 +53,64 @@ async function validateSession() {
         }
       });
 
+
     if (!response.ok) {
       redirectToLogin();
       return;
     }
 
+
     const data =
       await response.json();
+
 
     // Usuario devuelto por /api/auth/me
     const user =
       data.user || data;
 
+
+    // ==========================================
+    // PROTEGER DASHBOARD SEGÚN ROL
+    // ==========================================
+
+    if (!protectAdministrativePortal(user)) {
+      return;
+    }
+
+
     // Guardamos el rol actual
     currentUserRole =
       user.role_code;
 
+
     // Mostramos datos del usuario
     renderLoggedUser(user);
 
+
     // Aplicamos interfaz según rol
     applyRoleInterface();
+
 
     // Mostramos la aplicación
     sessionLoader.classList.add('d-none');
     appRoot.classList.remove('d-none');
 
+
     // Cargamos dashboard
     await loadBillingDashboard();
 
+
   } catch (error) {
+
     console.error(
       'Error validando sesión:',
       error
     );
 
     redirectToLogin();
+
   }
+
 }
 
 
@@ -2021,6 +2045,64 @@ function applyRoleInterface() {
     `;
   }
 }
+
+
+function protectAdministrativePortal(user) {
+
+  // ==========================================
+  // CAREGIVER
+  // ==========================================
+
+  if (
+    user.user_type === 'app' &&
+    user.role_code === 'caregiver'
+  ) {
+
+    window.location.replace(
+      '/caregiver.html'
+    );
+
+    return false;
+  }
+
+
+  // ==========================================
+  // SOLO ADMIN Y ANALYST
+  // ==========================================
+
+  const administrativeRoles = [
+    'admin',
+    'analyst'
+  ];
+
+
+  if (
+    user.user_type !== 'admin' ||
+    !administrativeRoles.includes(
+      user.role_code
+    )
+  ) {
+
+    sessionStorage.removeItem(
+      'agecare_token'
+    );
+
+    sessionStorage.removeItem(
+      'agecare_user'
+    );
+
+    window.location.replace('/');
+
+    return false;
+  }
+
+
+  return true;
+
+}
+
+
+
 
 
 

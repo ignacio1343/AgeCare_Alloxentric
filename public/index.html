@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>AgeCare · Administración</title>
+    <title>AgeCare</title>
     <link rel="icon" type="image/jpeg" href="/img/logoAgecare.jpg">
 
     <!-- Bootstrap 5 -->
@@ -265,7 +265,7 @@
                         </div>
 
                         <div class="text-secondary mt-1">
-                            Administración
+                            Operaciones Internas
                         </div>
                     </div>
                 </div>
@@ -275,8 +275,7 @@
                 </h1>
 
                 <p class="brand-description mb-5">
-                    Plataforma administrativa para gestionar usuarios,
-                    contenido, suscripciones, pagos y operaciones internas
+                    Plataforma para operaciones internas
                     de AgeCare.
                 </p>
 
@@ -339,7 +338,7 @@
                         </div>
 
                         <div class="text-muted small">
-                            Administración
+                            Operaciones Internas
                         </div>
                     </div>
                 </div>
@@ -354,7 +353,7 @@
                             </h2>
 
                             <p class="login-subtitle mb-0">
-                                Ingresa tus credenciales para acceder al panel administrativo.
+                                    Ingresa tus credenciales para acceder a AgeCare.
                             </p>
                         </div>
 
@@ -674,11 +673,46 @@
             );
 
 
+            // REDIRECCIÓN SEGÚN ROL // =====================================
+
+            if (
+                data.user.user_type === 'admin' &&
+                (
+                    data.user.role_code === 'admin' ||
+                    data.user.role_code === 'analyst'
+                )
+            ) {
+
+                window.location.href = '/dashboard.html';
+
+                return;
+            }
+
+
+            if (
+                data.user.user_type === 'app' &&
+                data.user.role_code === 'caregiver'
+            ) {
+                window.location.href ='/caregiver.html';
+                return;
+            }
+
+
             // =====================================
-            // REDIRECCIÓN
+            // ROL TODAVÍA NO IMPLEMENTADO
             // =====================================
 
-            window.location.href = '/dashboard.html';
+            sessionStorage.removeItem(
+                'agecare_token'
+            );
+
+            sessionStorage.removeItem(
+                'agecare_user'
+            );
+
+            throw new Error(
+                'Este tipo de usuario aún no tiene un portal habilitado.'
+            );
 
 
         } catch (error) {
